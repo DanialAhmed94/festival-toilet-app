@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "7789770188",
+    "project_id": "crapapps-65472",
+    "storage_bucket": "crapapps-65472.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:7789770188:android:2abb3f7e3fddd87711d969",
+        "android_client_info": {
+          "package_name": "com.crapadviser.orgnaizer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTR8ZK1TfP5OPSJnJf6l-pDs9AVeiJGLA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:7789770188:android:0c37e4f0e4eb939811d969",
+        "android_client_info": {
+          "package_name": "com.crapadviser.user"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTR8ZK1TfP5OPSJnJf6l-pDs9AVeiJGLA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:7789770188:android:9081d3d3dc3a97b311d969",
+        "android_client_info": {
+          "package_name": "com.festiefoodie.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTR8ZK1TfP5OPSJnJf6l-pDs9AVeiJGLA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
