@@ -74,18 +74,20 @@ dependencies:
   visibility_detector: ^0.4.0+2
   chewie: ^1.8.2
   video_compress: ^3.1.4
-  ffmpeg_kit_flutter_new: 1.2.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  #  flutter_launcher_icons: ^0.13.1
-  #flutter_launcher_icons:
-  #  # android: true
-  # ios: true
-  # image_path: "assets/icons/appLogo.png"
-  # adaptive_icon_foreground: "assets/icons/foreground_updatedlogo.png"
-    # adaptive_icon_background: "#00000000"
-    # min_sdk_android: 21
+  flutter_launcher_icons: ^0.13.1
+flutter_launcher_icons:
+  android: true
+  ios: true
+  # Use a 512x512 PNG for best results (transparent background recommended)
+  image_path: "assets/icons/toiletAppLogo.png"
+  adaptive_icon_background: "#0000FF"
+  adaptive_icon_foreground: "assets/icons/toiletAppLogo.png"
+  # Inset (%) so the logo doesn't overflow the safe zone (default 16; higher = smaller logo)
+  adaptive_icon_foreground_inset: 28
+  min_sdk_android: 21
 
 flutter:
   uses-material-design: true

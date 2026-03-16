@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:crapadvisor/screens/reviewsScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -32,6 +33,9 @@ class FestivalCacheManager extends CacheManager with ImageCacheManager {
   );
 }
 
+const String _festivalsBaseUrl =
+    'https://stagingcrapadvisor.semicolonstech.com/api/getfestival';
+
 class FestivalList extends StatefulWidget {
   const FestivalList({super.key});
 
@@ -40,11 +44,22 @@ class FestivalList extends StatefulWidget {
 }
 
 class _FestivalListState extends State<FestivalList> {
-  late Future<List<Festival>> futureFestivals;
   List<Festival> allFestivals = [];
   List<Festival> filteredFestivals = [];
-  
-  // Search functionality variables
+  List<Festival> _searchResultFestivals = [];
+  bool _isSearchingApi = false;
+  String? _searchErrorApi;
+  Timer? _searchDebounce;
+
+  int _currentPage = 1;
+  int _lastPage = 1;
+  bool _hasMore = true;
+  bool _isInitialLoading = true;
+  bool _isLoadingMore = false;
+  String? _errorMessage;
+
+  final ScrollController _scrollController = ScrollController();
+
   TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
   bool _showSearchResults = false;
@@ -53,25 +68,84 @@ class _FestivalListState extends State<FestivalList> {
   @override
   void initState() {
     super.initState();
-    futureFestivals = fetchFestivalsData();
     _searchController.addListener(_onSearchChanged);
     _searchFocusNode.addListener(_onFocusChanged);
-    
-    // Preload images for better performance
-    _preloadImages();
+    _scrollController.addListener(_onScroll);
+    _scrollController.addListener(_dismissKeyboardOnScroll);
+    _loadFirstPage();
   }
 
-  void _preloadImages() async {
+  void _dismissKeyboardOnScroll() {
+    if (_searchFocusNode.hasFocus) {
+      FocusScope.of(context).unfocus();
+    }
+  }
+
+  void _onScroll() {
+    if (!_hasMore || _isLoadingMore || _showSearchResults) return;
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 200) {
+      _loadNextPage();
+    }
+  }
+
+  Future<void> _loadFirstPage() async {
+    if (!mounted) return;
+    setState(() {
+      _isInitialLoading = true;
+      _errorMessage = null;
+      _currentPage = 1;
+      _hasMore = true;
+    });
     try {
-      final festivals = await futureFestivals;
-      for (final festival in festivals.take(10)) { // Preload first 10 images
-        if (festival.image != null && festival.image!.isNotEmpty) {
-          final imageUrl = "https://stagingcrapadvisor.semicolonstech.com/asset/festivals/${festival.image}";
-          precacheImage(CachedNetworkImageProvider(imageUrl), context);
-        }
-      }
+      final result = await fetchFestivals(_festivalsBaseUrl, page: 1);
+      if (!mounted) return;
+      setState(() {
+        allFestivals = result.data;
+        _currentPage = result.currentPage;
+        _lastPage = result.lastPage;
+        _hasMore = _currentPage < _lastPage;
+        _isInitialLoading = false;
+      });
+      _preloadImagesFromList(allFestivals.take(10).toList());
     } catch (e) {
-      print('Error preloading images: $e');
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString();
+        _isInitialLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadNextPage() async {
+    if (_isLoadingMore || !_hasMore || _currentPage >= _lastPage) return;
+    setState(() => _isLoadingMore = true);
+    try {
+      final nextPage = _currentPage + 1;
+      final result = await fetchFestivals(_festivalsBaseUrl, page: nextPage);
+      if (!mounted) return;
+      setState(() {
+        allFestivals = [...allFestivals, ...result.data];
+        _currentPage = result.currentPage;
+        _lastPage = result.lastPage;
+        _hasMore = _currentPage < _lastPage && result.data.isNotEmpty;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingMore = false;
+      });
+    }
+  }
+
+  void _preloadImagesFromList(List<Festival> festivals) {
+    for (final festival in festivals) {
+      if (festival.image.isNotEmpty) {
+        final imageUrl =
+            'https://stagingcrapadvisor.semicolonstech.com/asset/festivals/${festival.image}';
+        precacheImage(CachedNetworkImageProvider(imageUrl), context);
+      }
     }
   }
 
@@ -83,6 +157,9 @@ class _FestivalListState extends State<FestivalList> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _scrollController.removeListener(_dismissKeyboardOnScroll);
+    _scrollController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -107,28 +184,50 @@ class _FestivalListState extends State<FestivalList> {
   }
 
   void _onSearchChanged() {
-    if (_searchController.text.isEmpty) {
+    final query = _searchController.text.trim();
+    _searchDebounce?.cancel();
+    if (query.isEmpty) {
       setState(() {
-        filteredFestivals = [];
+        _searchResultFestivals = [];
+        _searchErrorApi = null;
         _showSearchResults = false;
         _isSearching = false;
+        _isSearchingApi = false;
       });
-    } else {
-      _filterFestivals(_searchController.text);
+      return;
     }
-  }
-
-  void _filterFestivals(String query) {
     setState(() {
-      filteredFestivals = allFestivals.where((festival) {
-        final name = festival.nameOrganizer?.toLowerCase() ?? '';
-        final description = festival.description?.toLowerCase() ?? '';
-        final searchQuery = query.toLowerCase();
-        return name.contains(searchQuery) || description.contains(searchQuery);
-      }).toList();
       _showSearchResults = true;
       _isSearching = true;
     });
+    _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
+      _performSearchApi(query);
+    });
+  }
+
+  Future<void> _performSearchApi(String query) async {
+    if (!mounted) return;
+    setState(() {
+      _isSearchingApi = true;
+      _searchErrorApi = null;
+    });
+    try {
+      final result = await fetchFestivals(_festivalsBaseUrl, page: 1, search: query);
+      if (!mounted) return;
+      setState(() {
+        _searchResultFestivals = result.data;
+        _isSearchingApi = false;
+        _searchErrorApi = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _searchResultFestivals = [];
+        _isSearchingApi = false;
+        _searchErrorApi = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
   }
 
   void _dismissKeyboardAndSearch() {
@@ -136,8 +235,10 @@ class _FestivalListState extends State<FestivalList> {
     _searchController.clear();
     setState(() {
       _showSearchResults = false;
-      filteredFestivals = [];
+      _searchResultFestivals = [];
+      _searchErrorApi = null;
       _isSearching = false;
+      _isSearchingApi = false;
     });
   }
 
@@ -175,14 +276,78 @@ class _FestivalListState extends State<FestivalList> {
     );
   }
 
-  Future<List<Festival>> fetchFestivalsData() async {
-    try {
-      Festivals fetchedFestivals = await fetchFestivals(
-          "https://stagingcrapadvisor.semicolonstech.com/api/getfestival");
-      return fetchedFestivals.data;
-    } catch (e) {
-      throw Exception("Error fetching festivals data: $e");
+  Widget _buildListContent() {
+    if (_isInitialLoading) {
+      return Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF45A3D9)),
+        ),
+      );
     }
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+              SizedBox(height: 16),
+              Text(
+                'Error loading festivals',
+                style: TextStyle(
+                  fontFamily: 'Poppins-SemiBold',
+                  fontSize: 16,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+              SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: _loadFirstPage,
+                icon: Icon(Icons.refresh),
+                label: Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (allFestivals.isEmpty) {
+      return Center(
+        child: Text(
+          'No festivals available',
+          style: TextStyle(fontFamily: 'Poppins-Medium', fontSize: 16),
+        ),
+      );
+    }
+    final itemCount = allFestivals.length + (_isLoadingMore ? 1 : 0);
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        if (index < allFestivals.length) {
+          return CustomCard(festival: allFestivals[index]);
+        }
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Center(
+            child: SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF45A3D9)),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -196,6 +361,7 @@ class _FestivalListState extends State<FestivalList> {
         return true;
       },
       child: GestureDetector(
+        behavior: HitTestBehavior.deferToChild,
         onTap: () => _dismissKeyboardAndSearch(),
         child: Scaffold(
           body: Stack(
@@ -335,191 +501,186 @@ class _FestivalListState extends State<FestivalList> {
                 ),
               ),
               
-              // Search Results
+              // Search Results — compact list, professional UI
               if (_showSearchResults && _searchController.text.isNotEmpty)
                 Positioned(
-                  top: MediaQuery.of(context).size.height * 0.22,
+                  top: MediaQuery.of(context).size.height * 0.20,
                   left: MediaQuery.of(context).size.width * 0.04,
                   right: MediaQuery.of(context).size.width * 0.04,
-                  child: Container(
-                    constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(context).size.height * 0.4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 15,
-                          offset: Offset(0, 4),
+                  child: Material(
+                    elevation: 8,
+                    shadowColor: Colors.black26,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.20,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Color(0xFF45A3D9).withOpacity(0.15),
+                          width: 1,
                         ),
-                      ],
-                      border: Border.all(
-                        color: Color(0xFF45A3D9).withOpacity(0.2),
-                        width: 1,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: _isSearchingApi
+                            ? Padding(
+                                padding: EdgeInsets.symmetric(vertical: 28),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 28,
+                                    height: 28,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF45A3D9)),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : _searchResultFestivals.isNotEmpty
+                                ? Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Padding(
+                                        padding: EdgeInsets.fromLTRB(12, 10, 12, 6),
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.search, size: 14, color: Color(0xFF45A3D9)),
+                                            SizedBox(width: 6),
+                                            Text(
+                                              'Search results (${_searchResultFestivals.length})',
+                                              style: TextStyle(
+                                                fontFamily: 'Poppins-SemiBold',
+                                                fontSize: 12,
+                                                color: Colors.black87,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Divider(height: 1),
+                                      Flexible(
+                                        child: ListView.builder(
+                                          padding: EdgeInsets.symmetric(vertical: 4),
+                                          itemCount: _searchResultFestivals.length,
+                                          itemBuilder: (context, index) {
+                                            final festival = _searchResultFestivals[index];
+                                            return Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
+                                                onTap: () {
+                                                  FocusScope.of(context).unfocus();
+                                                  _selectFestival(festival);
+                                                },
+                                                child: Padding(
+                                                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                                  child: Row(
+                                                    children: [
+                                                      Container(
+                                                        width: 30,
+                                                        height: 30,
+                                                        decoration: BoxDecoration(
+                                                          color: Color(0xFF45A3D9).withOpacity(0.12),
+                                                          borderRadius: BorderRadius.circular(8),
+                                                        ),
+                                                        child: Icon(Icons.festival, color: Color(0xFF45A3D9), size: 14),
+                                                      ),
+                                                      SizedBox(width: 10),
+                                                      Expanded(
+                                                        child: Text(
+                                                          festival.nameOrganizer ?? festival.description ?? 'Unknown Festival',
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                          style: TextStyle(
+                                                            fontFamily: 'Poppins-Medium',
+                                                            fontSize: 13,
+                                                            color: Colors.black87,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Icon(Icons.chevron_right, color: Colors.grey[400], size: 18),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Padding(
+                                    padding: EdgeInsets.all(20),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (_searchErrorApi != null)
+                                            Padding(
+                                              padding: EdgeInsets.only(bottom: 8),
+                                              child: Text(
+                                                _searchErrorApi!,
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  fontFamily: 'Poppins-Regular',
+                                                  fontSize: 12,
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                            ),
+                                          Container(
+                                            padding: EdgeInsets.all(14),
+                                            decoration: BoxDecoration(
+                                              color: Color(0xFF45A3D9).withOpacity(0.08),
+                                              borderRadius: BorderRadius.circular(50),
+                                            ),
+                                            child: Icon(
+                                              Icons.search_off,
+                                              size: 40,
+                                              color: Color(0xFF45A3D9),
+                                            ),
+                                          ),
+                                          SizedBox(height: 12),
+                                          Text(
+                                            'No festivals found',
+                                            style: TextStyle(
+                                              fontFamily: 'Poppins-SemiBold',
+                                              fontSize: 16,
+                                              color: Color(0xFF45A3D9),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          SizedBox(height: 6),
+                                          Text(
+                                            'Try different keywords',
+                                            style: TextStyle(
+                                              fontFamily: 'Poppins-Regular',
+                                              fontSize: 13,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                       ),
                     ),
-                    child: filteredFestivals.isNotEmpty
-                        ? ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: filteredFestivals.length,
-                            itemBuilder: (context, index) {
-                              final festival = filteredFestivals[index];
-                              return Container(
-                                margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Color(0xFF45A3D9).withOpacity(0.1),
-                                      Color(0xFF45D9D0).withOpacity(0.1),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Color(0xFF45A3D9).withOpacity(0.2),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(12),
-                                    onTap: () {
-                                      FocusScope.of(context).unfocus();
-                                      _selectFestival(festival);
-                                    },
-                                    child: ListTile(
-                                      leading: Container(
-                                        padding: EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              Color(0xFF45A3D9),
-                                              Color(0xFF45D9D0),
-                                            ],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          ),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: Icon(
-                                          Icons.festival,
-                                          color: Colors.white,
-                                          size: 20,
-                                        ),
-                                      ),
-                                      title: Text(
-                                        festival.nameOrganizer ?? festival.description ?? 'Unknown Festival',
-                                        style: TextStyle(
-                                          fontFamily: 'Poppins-SemiBold',
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 16,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      trailing: Icon(
-                                        Icons.arrow_forward_ios,
-                                        color: Color(0xFF45A3D9),
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          )
-                        : Padding(
-                            padding: EdgeInsets.all(20),
-                            child: Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Color(0xFF45A3D9).withOpacity(0.1),
-                                          Color(0xFF45D9D0).withOpacity(0.1),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                      borderRadius: BorderRadius.circular(50),
-                                    ),
-                                    child: Icon(
-                                      Icons.search_off,
-                                      size: 48,
-                                      color: Color(0xFF45A3D9),
-                                    ),
-                                  ),
-                                  SizedBox(height: 12),
-                                  Text(
-                                    'No festivals found',
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins-SemiBold',
-                                      fontSize: 18,
-                                      color: Color(0xFF45A3D9),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'Try searching with different keywords',
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins-Regular',
-                                      fontSize: 14,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                   ),
                 ),
               
               // Festival List Content
               Positioned(
-                top: _showSearchResults && _searchController.text.isNotEmpty 
+                top: _showSearchResults && _searchController.text.isNotEmpty
                     ? MediaQuery.of(context).size.height * 0.65
                     : MediaQuery.of(context).size.height * 0.22,
                 bottom: 0,
                 left: 0,
                 right: 0,
-                child: FutureBuilder<List<Festival>>(
-                  future: futureFestivals,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    } else if (snapshot.hasError) {
-                      return Center(
-                        child: Text("Error: ${snapshot.error}"),
-                      );
-                    } else if (snapshot.hasData) {
-                      List<Festival> festivals = snapshot.data!;
-                      // Store festivals for search functionality
-                      if (allFestivals.isEmpty) {
-                        allFestivals = festivals;
-                      }
-                      return ListView.builder(
-                        itemCount: festivals.length,
-                        itemBuilder: (context, index) {
-                          return CustomCard(festival: festivals[index]);
-                        },
-                      );
-                    } else {
-                      return Center(
-                        child: Text("No festivals available"),
-                      );
-                    }
-                  },
-                ),
+                child: _buildListContent(),
               ),
             ],
           ),

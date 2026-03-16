@@ -49,7 +49,7 @@ class AppSelectionView extends StatelessWidget {
                       children: [
                         // Crap Advisor Section
                         _buildAppInfoSection(
-                          title: "Crap Adviser:",
+                          title: "Festival Toilet:",
                           description:
                               "Discover and review clean festival toilets to make informed decisions. Upload reviews of your download and promote a better festival experience for everyone.",
                           logoPath: AppConstants.crapLogo,
@@ -86,8 +86,8 @@ class AppSelectionView extends StatelessWidget {
                         );
                       }
                     },
-                    child: SvgPicture.asset(
-                      "assets/svgs/crapChat.svg",
+                    child: Image.asset(
+                      "assets/images/festivalGlobalfeed.png",
                       fit: BoxFit.cover,
                     ),
                   ),

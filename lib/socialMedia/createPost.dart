@@ -4,7 +4,6 @@ import 'dart:convert'; // For base64 encoding
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crapadvisor/resource_module/constants/AppConstants.dart';
-import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -872,8 +871,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
       await Future.wait(cancelFutures);
 
-      // Cancel all active FFmpegKit sessions globally
-      await FFmpegKit.cancel(); // Cancel all active FFmpegKit sessions
 
       // Cancel any ongoing video compression via VideoCompress package
       await VideoCompress.cancelCompression();

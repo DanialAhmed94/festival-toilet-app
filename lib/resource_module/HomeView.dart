@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crapadvisor/main.dart';
 import 'package:crapadvisor/resource_module/apis/logout.dart';
@@ -32,7 +33,7 @@ class _HomeViewState extends State<HomeView> {
   final FocusNode _searchFocusNode = FocusNode();
   bool _isSearching = false;
   List<dynamic> allFestivals = [];
-  List<dynamic> filteredFestivals = [];
+  Timer? _searchDebounce;
 
   final List<Color> colors = [
     Color(0xFF015CE9),
@@ -46,6 +47,8 @@ class _HomeViewState extends State<HomeView> {
     Color(0xFFFF866D),
   ];
 
+  final ScrollController _scrollController = ScrollController();
+
   Future<void> _loadProfileData() async {
     final name = await getUserName() ?? "";
     setState(() {
@@ -58,6 +61,8 @@ class _HomeViewState extends State<HomeView> {
     super.initState();
     _loadProfileData();
     _searchController.addListener(_onSearchChanged);
+    _scrollController.addListener(_onScroll);
+    _scrollController.addListener(_dismissKeyboardOnScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<FestivalProvider>(context, listen: false)
           .fetchFestivals(context);
@@ -73,48 +78,50 @@ class _HomeViewState extends State<HomeView> {
     });
   }
 
+  void _dismissKeyboardOnScroll() {
+    if (_searchFocusNode.hasFocus) {
+      FocusScope.of(context).unfocus();
+    }
+  }
+
+  void _onScroll() {
+    if (_searchController.text.isNotEmpty) return;
+    final provider = Provider.of<FestivalProvider>(context, listen: false);
+    if (!provider.hasMore || provider.isLoadingMore) return;
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 200) {
+      provider.loadMore(context);
+    }
+  }
+
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.removeListener(_dismissKeyboardOnScroll);
+    _scrollController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
   }
 
   void _onSearchChanged() {
-    print('Search text changed: "${_searchController.text}"');
-    _filterFestivals();
-  }
-
-  void _filterFestivals() {
-    final query = _searchController.text.toLowerCase();
+    final query = _searchController.text.trim();
     final festivalProvider =
         Provider.of<FestivalProvider>(context, listen: false);
 
-    print('Search query: "$query"');
-    print(
-        'Total festivals available: ${festivalProvider.resourceFestivals?.length ?? 0}');
-
-    setState(() {
-      if (query.isEmpty) {
-        filteredFestivals = [];
-        print('Query is empty, showing all festivals');
-      } else {
-        filteredFestivals = festivalProvider.resourceFestivals
-                ?.where((festival) =>
-                    (festival.nameOrganizer ?? '')
-                        .toLowerCase()
-                        .contains(query) ||
-                    (festival.description ?? '')
-                        .toLowerCase()
-                        .contains(query) ||
-                    (festival.descriptionOrganizer ?? '')
-                        .toLowerCase()
-                        .contains(query))
-                .toList() ??
-            [];
-        print('Filtered festivals count: ${filteredFestivals.length}');
-      }
+    _searchDebounce?.cancel();
+    if (query.isEmpty) {
+      festivalProvider.clearSearch();
+      setState(() {});
+      return;
+    }
+    _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
+      festivalProvider.searchFestivals(context, query);
+      setState(() {});
     });
+    setState(() {});
   }
 
   void _dismissKeyboardAndSearch() {
@@ -156,11 +163,10 @@ class _HomeViewState extends State<HomeView> {
   List<dynamic> _getDisplayFestivals() {
     final festivalProvider =
         Provider.of<FestivalProvider>(context, listen: false);
-    if (_searchController.text.isEmpty) {
-      return festivalProvider.resourceFestivals ?? [];
-    } else {
-      return filteredFestivals;
+    if (_searchController.text.trim().isEmpty) {
+      return festivalProvider.resourceFestivals;
     }
+    return festivalProvider.searchResults;
   }
 
   @override
@@ -222,6 +228,7 @@ class _HomeViewState extends State<HomeView> {
         return true;
       },
       child: GestureDetector(
+        behavior: HitTestBehavior.deferToChild,
         onTap: _dismissKeyboardAndSearch,
         child: Scaffold(
           body: Stack(
@@ -360,27 +367,33 @@ class _HomeViewState extends State<HomeView> {
                       ],
                     ),
                     SizedBox(height: largeSpacing),
-                    // Search Bar
+                    // Search bar — professional, compact
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(borderRadius),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.grey.withOpacity(0.2),
+                          width: 1,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: getResponsiveSize(8.0,
-                                tabletMultiplier: 10.0,
-                                largeScreenMultiplier: 12.0),
-                            offset: Offset(
-                                0,
-                                getResponsiveSize(2.0,
-                                    tabletMultiplier: 3.0,
-                                    largeScreenMultiplier: 4.0)),
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 12,
+                            offset: Offset(0, 2),
                           ),
                         ],
                       ),
                       child: Row(
                         children: [
+                          Padding(
+                            padding: EdgeInsets.only(left: 14),
+                            child: Icon(
+                              Icons.search_rounded,
+                              color: Colors.grey[500],
+                              size: searchIconSize,
+                            ),
+                          ),
                           Expanded(
                             child: TextField(
                               controller: _searchController,
@@ -388,22 +401,20 @@ class _HomeViewState extends State<HomeView> {
                               onSubmitted: _onSearchSubmitted,
                               onEditingComplete: _dismissKeyboardAndSearch,
                               textInputAction: TextInputAction.search,
-                              style: TextStyle(fontSize: searchFontSize),
+                              style: TextStyle(
+                                fontSize: searchFontSize,
+                                fontFamily: 'Poppins-Regular',
+                              ),
                               decoration: InputDecoration(
                                 hintText: "Search festivals...",
                                 hintStyle: TextStyle(
                                   color: Colors.grey[500],
                                   fontSize: searchFontSize,
                                 ),
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  color: Colors.grey[600],
-                                  size: searchIconSize,
-                                ),
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(
-                                  horizontal: mediumSpacing,
-                                  vertical: mediumSpacing,
+                                  horizontal: 12,
+                                  vertical: 12,
                                 ),
                               ),
                             ),
@@ -412,9 +423,9 @@ class _HomeViewState extends State<HomeView> {
                             IconButton(
                               onPressed: _onClearButtonTap,
                               icon: Icon(
-                                Icons.clear,
+                                Icons.cancel_outlined,
                                 color: Colors.grey[600],
-                                size: searchIconSize,
+                                size: searchIconSize * 0.9,
                               ),
                             ),
                         ],
@@ -430,24 +441,17 @@ class _HomeViewState extends State<HomeView> {
                             FadePageRouteBuilder(
                                 widget: SocialMediaHomeView()));
                       },
-                      child: SvgPicture.asset(
-                        "assets/svgs/crapChat.svg",
-                        width: getResponsiveSize(screenWidth * 0.15,
-                            tabletMultiplier: 0.12,
-                            largeScreenMultiplier: 0.10),
-                        height: getResponsiveSize(screenHeight * 0.08,
-                            tabletMultiplier: 0.06,
-                            largeScreenMultiplier: 0.05),
-                        fit: BoxFit.contain,
+                      child: Image.asset(
+                        "assets/images/festivalGlobalfeed.png",
+
+
                       ),
                     ),
                   ],
                 ),
               ),
 
-              SizedBox(
-                height: 10,
-              ),
+
 
               // ListView.builder for festivals
               Positioned.fill(
@@ -455,30 +459,69 @@ class _HomeViewState extends State<HomeView> {
                     tabletMultiplier: 0.28, largeScreenMultiplier: 0.25),
                 left: horizontalPadding,
                 right: horizontalPadding,
-                child: festivalProvider.resourceFestivals == null
+                child: (_searchController.text.trim().isNotEmpty && festivalProvider.isSearching)
                     ? Center(child: CircularProgressIndicator())
-                    : _getDisplayFestivals().isEmpty
-                        ? Center(
-                            child: Text(
-                                _searchController.text.isNotEmpty
-                                    ? "No festivals found matching '${_searchController.text}'"
-                                    : "No festivals available",
-                                style: TextStyle(
-                                    fontSize: getResponsiveSize(
-                                        screenWidth * 0.045,
-                                        tabletMultiplier: 0.04,
-                                        largeScreenMultiplier: 0.035),
-                                    color: Colors.black)),
-                          )
+                    : festivalProvider.isLoading && festivalProvider.resourceFestivals.isEmpty
+                        ? Center(child: CircularProgressIndicator())
+                        : _getDisplayFestivals().isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (festivalProvider.searchError != null)
+                                      Padding(
+                                        padding: EdgeInsets.only(bottom: 8),
+                                        child: Text(
+                                          festivalProvider.searchError!,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: getResponsiveSize(
+                                                screenWidth * 0.035,
+                                                tabletMultiplier: 0.03,
+                                                largeScreenMultiplier: 0.028),
+                                            color: Colors.red),
+                                        ),
+                                      ),
+                                    Text(
+                                      _searchController.text.isNotEmpty
+                                          ? "No festivals found matching '${_searchController.text}'"
+                                          : "No festivals available",
+                                      style: TextStyle(
+                                          fontSize: getResponsiveSize(
+                                              screenWidth * 0.045,
+                                              tabletMultiplier: 0.04,
+                                              largeScreenMultiplier: 0.035),
+                                          color: Colors.black),
+                                    ),
+                                  ],
+                                ),
+                              )
                         : ListView.builder(
-                            // Ensure the ListView doesn't shrink unexpectedly
+                            controller: _scrollController,
                             padding: EdgeInsets.only(
                                 bottom: getResponsiveSize(screenHeight * 0.02,
                                     tabletMultiplier: 0.025,
                                     largeScreenMultiplier: 0.03)),
-                            itemCount: _getDisplayFestivals().length,
+                            itemCount: _getDisplayFestivals().length +
+                                (_searchController.text.trim().isEmpty &&
+                                        festivalProvider.hasMore &&
+                                        festivalProvider.isLoadingMore
+                                    ? 1
+                                    : 0),
                             itemBuilder: (context, index) {
-                              final festival = _getDisplayFestivals()[index];
+                              final displayList = _getDisplayFestivals();
+                              if (index >= displayList.length) {
+                                return Padding(
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: getResponsiveSize(
+                                          screenHeight * 0.02,
+                                          tabletMultiplier: 0.025,
+                                          largeScreenMultiplier: 0.03)),
+                                  child: Center(
+                                      child: CircularProgressIndicator()),
+                                );
+                              }
+                              final festival = displayList[index];
                               Color containerColor =
                                   colors[index % colors.length];
                               Color openColor =
@@ -501,13 +544,10 @@ class _HomeViewState extends State<HomeView> {
                                         screenHeight * 0.35,
                                         tabletMultiplier: 0.32,
                                         largeScreenMultiplier: 0.30),
-                                    // Responsive height
                                     width: double.infinity,
-                                    // Make width flexible
                                     decoration: BoxDecoration(
                                       borderRadius:
                                           BorderRadius.circular(borderRadius),
-                                      // Responsive border radius
                                       color: containerColor,
                                     ),
                                     child: Row(
@@ -520,7 +560,6 @@ class _HomeViewState extends State<HomeView> {
                                                     tabletMultiplier: 0.025,
                                                     largeScreenMultiplier:
                                                         0.03)),
-                                            // Responsive padding
                                             child: Column(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
@@ -533,7 +572,6 @@ class _HomeViewState extends State<HomeView> {
                                                               0.025,
                                                           largeScreenMultiplier:
                                                               0.03)),
-                                                  // Responsive padding
                                                   child: Row(
                                                     children: [
                                                       GestureDetector(
@@ -624,7 +662,6 @@ class _HomeViewState extends State<HomeView> {
                                                     ],
                                                   ),
                                                 ),
-                                                // SizedBox(height: screenHeight * 0.001), // 0.5% of screen height
                                                 Padding(
                                                   padding: EdgeInsets.only(
                                                       left: getResponsiveSize(
@@ -633,7 +670,6 @@ class _HomeViewState extends State<HomeView> {
                                                               0.025,
                                                           largeScreenMultiplier:
                                                               0.03)),
-                                                  // Responsive padding
                                                   child: Text(
                                                     festival.nameOrganizer ??
                                                         festival.description,
@@ -647,7 +683,6 @@ class _HomeViewState extends State<HomeView> {
                                                                 0.045,
                                                             largeScreenMultiplier:
                                                                 0.04)),
-                                                    // Responsive font size
                                                     maxLines: 1,
                                                     overflow:
                                                         TextOverflow.ellipsis,
@@ -661,7 +696,6 @@ class _HomeViewState extends State<HomeView> {
                                                               0.025,
                                                           largeScreenMultiplier:
                                                               0.03)),
-                                                  // Responsive padding
                                                   child: Text(
                                                     festival.descriptionOrganizer ??
                                                         "description not specified",
@@ -673,7 +707,6 @@ class _HomeViewState extends State<HomeView> {
                                                                 0.03,
                                                             largeScreenMultiplier:
                                                                 0.028)),
-                                                    // Responsive font size
                                                     maxLines: 2,
                                                     overflow:
                                                         TextOverflow.ellipsis,
@@ -685,7 +718,6 @@ class _HomeViewState extends State<HomeView> {
                                                         tabletMultiplier: 0.008,
                                                         largeScreenMultiplier:
                                                             0.01)),
-                                                // 0.5% of screen height
                                                 Row(
                                                   children: [
                                                     Expanded(
@@ -695,11 +727,9 @@ class _HomeViewState extends State<HomeView> {
                                                                 left:
                                                                     screenWidth *
                                                                         0.02,
-                                                                // 2% of screen width
                                                                 right:
                                                                     screenWidth *
                                                                         0.015),
-                                                        // 1.5% of screen width
                                                         child: Text(
                                                           "From: ${_formatFestivalDate(festival.startingDate)}",
                                                           style: TextStyle(
@@ -711,7 +741,6 @@ class _HomeViewState extends State<HomeView> {
                                                               fontSize:
                                                                   screenWidth *
                                                                       0.04),
-                                                          // Increased from 3.5% to 4%
                                                           maxLines: 2,
                                                           overflow: TextOverflow
                                                               .ellipsis,
@@ -725,11 +754,9 @@ class _HomeViewState extends State<HomeView> {
                                                                 left:
                                                                     screenWidth *
                                                                         0.015,
-                                                                // 1.5% of screen width
                                                                 right:
                                                                     screenWidth *
                                                                         0.02),
-                                                        // 2% of screen width
                                                         child: Text(
                                                           "To: ${_formatFestivalDate(festival.endingDate)}",
                                                           style: TextStyle(
@@ -741,7 +768,6 @@ class _HomeViewState extends State<HomeView> {
                                                               fontSize:
                                                                   screenWidth *
                                                                       0.04),
-                                                          // Increased from 3.5% to 4%
                                                           maxLines: 2,
                                                           overflow: TextOverflow
                                                               .ellipsis,
@@ -750,8 +776,6 @@ class _HomeViewState extends State<HomeView> {
                                                     ),
                                                   ],
                                                 ),
-                                                // Removed Spacer() here to prevent overflow
-                                                // Added Flexible to allow content to adjust
                                                 Flexible(
                                                   fit: FlexFit.tight,
                                                   child: Row(
@@ -759,17 +783,15 @@ class _HomeViewState extends State<HomeView> {
                                                       Container(
                                                         height:
                                                             screenHeight * 0.05,
-                                                        // Increased from 6% to 7% of screen height
                                                         width:
                                                             screenWidth * 0.3,
-                                                        // Increased from 30% to 35% of screen width
                                                         decoration:
                                                             BoxDecoration(
                                                           color: openColor,
                                                           borderRadius:
                                                               BorderRadius.circular(
                                                                   screenWidth *
-                                                                      0.04), // 4% of screen width
+                                                                      0.04),
                                                         ),
                                                         child: Center(
                                                           child: Text("Open",
@@ -779,7 +801,6 @@ class _HomeViewState extends State<HomeView> {
                                                                   fontSize:
                                                                       screenWidth *
                                                                           0.05,
-                                                                  // Increased from 4.5% to 5%
                                                                   fontWeight:
                                                                       FontWeight
                                                                           .bold)),
@@ -788,13 +809,11 @@ class _HomeViewState extends State<HomeView> {
                                                       SizedBox(
                                                           width: screenWidth *
                                                               0.05),
-                                                      // 5% of screen width
                                                       Image.asset(
                                                           AppConstants
                                                               .forwardIcon,
                                                           height: screenWidth *
                                                               0.05,
-                                                          // Increased from 5% to 7%
                                                           width: screenWidth *
                                                               0.05),
                                                       Spacer(),
@@ -804,11 +823,9 @@ class _HomeViewState extends State<HomeView> {
                                                                 .circular(
                                                                     screenWidth *
                                                                         0.02),
-                                                        // 4% of screen width
                                                         child: Container(
                                                           height: screenWidth *
                                                               0.35,
-                                                          // Increased from 22% to 28% of screen width
                                                           width: screenWidth *
                                                               0.28,
                                                           child: festival.image !=

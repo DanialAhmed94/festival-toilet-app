@@ -4,7 +4,7 @@ class AppConstants {
   static const String mapPreview = "assets/images/mapPreview.png";
 
   static String appSelectionScreenBg = "assets/resource_svgs/appSelectionFrame.svg";
-  static String crapLogo = "assets/icons/finalLogo.jpg";
+  static String crapLogo = "assets/icons/toiletAppLogo.png";
 
   static String userAppLogo = "assets/resource_images/userappLogo.png";
   static String app1Card = "assets/resource_images/app1card.png";

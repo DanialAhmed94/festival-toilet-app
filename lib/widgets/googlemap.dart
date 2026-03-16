@@ -28,8 +28,14 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   bool _showInstructionOverlay = false; // Instruction overlay state
 
   // Search functionality variables
+  static const String _festivalsBaseUrl =
+      'https://stagingcrapadvisor.semicolonstech.com/api/getfestival';
   TextEditingController _searchController = TextEditingController();
   List<Festival> _filteredFestivals = [];
+  List<Festival> _searchResultFestivals = [];
+  bool _isSearchingApi = false;
+  String? _searchErrorApi;
+  Timer? _searchDebounce;
   bool _isSearching = false;
   bool _showSearchResults = false;
   FocusNode _searchFocusNode = FocusNode();
@@ -64,6 +70,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -91,26 +98,46 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   }
 
   void _onSearchChanged() {
-    if (_searchController.text.isEmpty) {
+    final query = _searchController.text.trim();
+    _searchDebounce?.cancel();
+    if (query.isEmpty) {
       setState(() {
-        _filteredFestivals = [];
+        _searchResultFestivals = [];
+        _searchErrorApi = null;
         _showSearchResults = false;
+        _isSearchingApi = false;
       });
-    } else {
-      _filterFestivals(_searchController.text);
+      return;
     }
+    setState(() => _showSearchResults = true);
+    _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
+      _performSearchApi(query);
+    });
   }
 
-  void _filterFestivals(String query) {
+  Future<void> _performSearchApi(String query) async {
+    if (!mounted) return;
     setState(() {
-      _filteredFestivals = festivals.where((festival) {
-        final name = festival.nameOrganizer?.toLowerCase() ?? '';
-        final description = festival.description?.toLowerCase() ?? '';
-        final searchQuery = query.toLowerCase();
-        return name.contains(searchQuery) || description.contains(searchQuery);
-      }).toList();
-      _showSearchResults = true;
+      _isSearchingApi = true;
+      _searchErrorApi = null;
     });
+    try {
+      final result = await fetchFestivals(_festivalsBaseUrl, page: 1, search: query);
+      if (!mounted) return;
+      setState(() {
+        _searchResultFestivals = result.data;
+        _isSearchingApi = false;
+        _searchErrorApi = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _searchResultFestivals = [];
+        _isSearchingApi = false;
+        _searchErrorApi = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
   }
 
   // Comprehensive keyboard dismissal method
@@ -122,7 +149,9 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
     _searchController.clear();
     setState(() {
       _showSearchResults = false;
-      _filteredFestivals = [];
+      _searchResultFestivals = [];
+      _searchErrorApi = null;
+      _isSearchingApi = false;
     });
   }
 
@@ -162,11 +191,9 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
 
   // Handle search field submission
   void _onSearchSubmitted(String value) {
-    if (_filteredFestivals.isNotEmpty) {
-      // Select the first result
-      _selectFestival(_filteredFestivals.first);
+    if (_searchResultFestivals.isNotEmpty) {
+      _selectFestival(_searchResultFestivals.first);
     } else {
-      // Dismiss keyboard if no results
       _dismissKeyboardAndSearch();
     }
   }
@@ -234,7 +261,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
       // Animate camera to the selected festival
       _controller.animateCamera(CameraUpdate.newLatLngZoom(festivalLatLng, 16));
 
-      // Add a special marker for the selected festival
+      // Add a special marker for the selected festival (with onTap so bottom sheet opens)
       setState(() {
         // Remove previous selected festival marker
         _markers.removeWhere(
@@ -250,9 +277,13 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
               title: _getCleanFestivalName(festival),
               snippet: "Selected Festival",
             ),
+            onTap: () => showMarkerInfo(context, festival),
           ),
         );
       });
+
+      // Open bottom sheet when navigating from search (same as tapping a marker)
+      showMarkerInfo(context, festival);
 
       // Show a brief success message (optional)
       ScaffoldMessenger.of(context).showSnackBar(
@@ -371,6 +402,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: GestureDetector(
+        behavior: HitTestBehavior.deferToChild,
         onTap: () => _dismissKeyboardAndSearch(),
         child: Stack(
           children: [
@@ -654,153 +686,174 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
               ),
             ),
 
-            // Search Results
+            // Search Results — visible list so user can see results before selecting
             if (_showSearchResults && _searchController.text.isNotEmpty)
               Positioned(
                 top: MediaQuery.of(context).padding.top +
-                    MediaQuery.of(context).size.height * 0.18,
+                    MediaQuery.of(context).size.height * 0.16,
                 left: MediaQuery.of(context).size.width * 0.04,
                 right: MediaQuery.of(context).size.width * 0.04,
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 15,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                    border: Border.all(
-                      color: Color(0xFF45A3D9).withOpacity(0.2),
-                      width: 1,
+                child: Material(
+                  elevation: 8,
+                  shadowColor: Colors.black26,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.20,
                     ),
-                  ),
-                  child: _filteredFestivals.isNotEmpty
-                      ? ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: _filteredFestivals.length,
-                          itemBuilder: (context, index) {
-                            final festival = _filteredFestivals[index];
-                            return Container(
-                              margin: EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Color(0xFF45A3D9).withOpacity(0.1),
-                                    Color(0xFF45D9D0).withOpacity(0.1),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Color(0xFF45A3D9).withOpacity(0.2),
-                                  width: 1,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Color(0xFF45A3D9).withOpacity(0.15),
+                        width: 1,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: _isSearchingApi
+                          ? Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16),
+                                child: SizedBox(
+                                  width: 26,
+                                  height: 26,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF45A3D9)),
+                                  ),
                                 ),
                               ),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(12),
-                                  onTap: () {
-                                    // Dismiss keyboard before selecting festival
-                                    FocusScope.of(context).unfocus();
-                                    _selectFestival(festival);
-                                  },
-                                  child: ListTile(
-                                    leading: Container(
-                                      padding: EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Color(0xFF45A3D9),
-                                            Color(0xFF45D9D0),
-                                          ],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Icon(
-                                        Icons.festival,
-                                        color: Colors.white,
-                                        size: 20,
+                            )
+                          : _searchResultFestivals.isNotEmpty
+                              ? Column(
+                                  mainAxisSize: MainAxisSize.max,
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Padding(
+                                      padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.search, size: 14, color: Color(0xFF45A3D9)),
+                                          SizedBox(width: 6),
+                                          Flexible(
+                                            child: Text(
+                                              'Search results (${_searchResultFestivals.length})',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontFamily: 'Poppins-SemiBold',
+                                                fontSize: 12,
+                                                color: Colors.black87,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    title: Text(
-                                      _getCleanFestivalName(festival),
+                                    Divider(height: 1),
+                                    Expanded(
+                                      child: ListView.builder(
+                                        padding: EdgeInsets.symmetric(vertical: 4),
+                                        itemCount: _searchResultFestivals.length,
+                                        itemBuilder: (context, index) {
+                                          final festival = _searchResultFestivals[index];
+                                          return Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              onTap: () {
+                                                FocusScope.of(context).unfocus();
+                                                _selectFestival(festival);
+                                              },
+                                              child: Padding(
+                                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                                child: Row(
+                                                  children: [
+                                                    Container(
+                                                      width: 30,
+                                                      height: 30,
+                                                      decoration: BoxDecoration(
+                                                        color: Color(0xFF45A3D9).withOpacity(0.12),
+                                                        borderRadius: BorderRadius.circular(8),
+                                                      ),
+                                                      child: Icon(Icons.festival, color: Color(0xFF45A3D9), size: 14),
+                                                    ),
+                                                    SizedBox(width: 10),
+                                                    Expanded(
+                                                      child: Text(
+                                                        _getCleanFestivalName(festival),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                        style: TextStyle(
+                                                          fontFamily: 'Poppins-Medium',
+                                                          fontSize: 13,
+                                                          color: Colors.black87,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Icon(Icons.chevron_right, color: Colors.grey[400], size: 18),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                )
+                          : SingleChildScrollView(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (_searchErrorApi != null)
+                                      Padding(
+                                        padding: EdgeInsets.only(bottom: 6),
+                                        child: Text(
+                                          _searchErrorApi!,
+                                          textAlign: TextAlign.center,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontFamily: 'Poppins-Regular',
+                                            fontSize: 11,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                      ),
+                                    Icon(
+                                      Icons.search_off,
+                                      size: 32,
+                                      color: Color(0xFF45A3D9),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'No festivals found',
                                       style: TextStyle(
                                         fontFamily: 'Poppins-SemiBold',
+                                        fontSize: 14,
+                                        color: Color(0xFF45A3D9),
                                         fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                        color: Colors.black87,
                                       ),
                                     ),
-                                    trailing: Icon(
-                                      Icons.arrow_forward_ios,
-                                      color: Color(0xFF45A3D9),
-                                      size: 16,
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Try different keywords',
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins-Regular',
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
                               ),
-                            );
-                          },
-                        )
-                      : Padding(
-                          padding: EdgeInsets.all(20),
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Color(0xFF45A3D9).withOpacity(0.1),
-                                        Color(0xFF45D9D0).withOpacity(0.1),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(50),
-                                  ),
-                                  child: Icon(
-                                    Icons.search_off,
-                                    size: 48,
-                                    color: Color(0xFF45A3D9),
-                                  ),
-                                ),
-                                SizedBox(height: 12),
-                                Text(
-                                  'No festivals found',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins-SemiBold',
-                                    fontSize: 18,
-                                    color: Color(0xFF45A3D9),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Try searching with different keywords',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins-Regular',
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
                             ),
-                          ),
-                        ),
+                    ),
+                  ),
                 ),
               ),
 
