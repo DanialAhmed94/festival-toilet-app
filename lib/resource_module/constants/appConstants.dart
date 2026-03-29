@@ -1,6 +1,9 @@
 class AppConstants {
   static String baseUrl = "https://stagingcrapadvisor.semicolonstech.com/api";
 
+  /// Saved on the Firestore `users` doc at signup (with verified phone) when sharing one Firebase project across apps.
+  static const String firebaseRegistrationAppId = 'festivalToiletApp';
+
   static const String mapPreview = "assets/images/mapPreview.png";
 
   static String appSelectionScreenBg = "assets/resource_svgs/appSelectionFrame.svg";

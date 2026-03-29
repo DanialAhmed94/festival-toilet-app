@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../resource_module/constants/appConstants.dart';
 import '../resource_module/model/chat_models.dart';
 import 'chat_detail_view.dart';
 import '../../services/firestore_user_service.dart';
@@ -733,8 +735,22 @@ class _CreateChatViewState extends State<CreateChatView> {
     _scrollToSearchResult();
 
     try {
-      // Search for user by phone number
+      debugPrint(
+        '[ChatSearch] CreateChatView search phone=$number '
+        'registeredFromApp=${AppConstants.firebaseRegistrationAppId}',
+      );
       final foundUser = await FirestoreUserService.searchUserByPhone(number);
+
+      if (foundUser != null) {
+        debugPrint(
+          '[ChatSearch] CreateChatView found userId=${foundUser.userId} '
+          'name=${foundUser.userName}',
+        );
+      } else {
+        debugPrint(
+          '[ChatSearch] CreateChatView no user for this app (phone=$number)',
+        );
+      }
 
       setState(() {
         _isLoading = false;
@@ -751,7 +767,8 @@ class _CreateChatViewState extends State<CreateChatView> {
         // Show not found message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('No user found with this phone number'),
+            content: Text(
+                'No user found with this phone number in this app'),
             backgroundColor: Colors.orange,
           ),
         );

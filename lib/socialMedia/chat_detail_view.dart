@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../services/firestore_chat_service.dart';
 import '../../services/firestore_user_service.dart';
 import '../resource_module/model/chat_models.dart';
+import '../widgets/firebase_stream_ui.dart';
 
 class ChatDetailView extends StatefulWidget {
   final String chatId;
@@ -42,6 +43,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   Map<String, String> _senderNames =
       {}; // Cache for sender names in group chats
   bool _isGroupChat = false; // Flag to identify group chats
+  bool _userIdResolved = false;
+  String? _userIdLoadError;
+  int _messagesStreamRetryKey = 0;
 
   @override
   void initState() {
@@ -91,17 +95,31 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   }
 
   Future<void> _loadCurrentUser() async {
+    if (!mounted) return;
+    setState(() {
+      _userIdLoadError = null;
+      _userIdResolved = false;
+    });
     try {
       _currentUserId = await FirestoreUserService.getUserId();
       if (_currentUserId != null) {
-        // Mark messages as read when opening chat
         await FirestoreChatService.markMessagesAsRead(
             widget.chatId, _currentUserId!);
       }
-      setState(() {});
     } catch (e) {
       print('❌ Error loading current user: $e');
+      _userIdLoadError = userFriendlyFirebaseError(e);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _userIdResolved = true;
+        });
+      }
     }
+  }
+
+  void _retryMessagesStream() {
+    setState(() => _messagesStreamRetryKey++);
   }
 
   void _scrollToBottom({bool animate = true}) {
@@ -350,16 +368,33 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   }
 
   Widget _buildMessagesList() {
-    if (_currentUserId == null) {
-      return Center(child: Text('Please login to view messages'));
+    if (!_userIdResolved) {
+      return firebaseStreamLoading(message: 'Loading messages…');
+    }
+    if (_userIdLoadError != null) {
+      return firebaseStreamError(
+        context: context,
+        message: _userIdLoadError!,
+        onRetry: _loadCurrentUser,
+        icon: Icons.person_off_outlined,
+      );
     }
 
     return StreamBuilder<List<ChatMessage>>(
+      key: ValueKey(_messagesStreamRetryKey),
       stream: FirestoreChatService.streamMessages(widget.chatId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(
-              child: Text('Error loading messages: ${snapshot.error}'));
+          return firebaseStreamError(
+            context: context,
+            message: userFriendlyFirebaseError(snapshot.error),
+            onRetry: _retryMessagesStream,
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return firebaseStreamLoading(message: 'Loading messages…');
         }
 
         final messages = snapshot.data ?? [];

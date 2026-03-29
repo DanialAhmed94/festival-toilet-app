@@ -9,6 +9,8 @@ class ChatUser {
   final DateTime createdAt;
   final bool isOnline;
   final DateTime? lastSeen;
+  /// Client app identifier stored when this user doc is created (signup / Firestore sync).
+  final String? registeredFromApp;
 
   ChatUser({
     required this.userId,
@@ -18,6 +20,7 @@ class ChatUser {
     required this.createdAt,
     this.isOnline = false,
     this.lastSeen,
+    this.registeredFromApp,
   });
 
   Map<String, dynamic> toMap() {
@@ -29,6 +32,7 @@ class ChatUser {
       'createdAt': Timestamp.fromDate(createdAt),
       'isOnline': isOnline,
       'lastSeen': lastSeen != null ? Timestamp.fromDate(lastSeen!) : null,
+      'registeredFromApp': registeredFromApp,
     };
   }
 
@@ -43,6 +47,7 @@ class ChatUser {
       lastSeen: map['lastSeen'] != null
           ? (map['lastSeen'] as Timestamp).toDate()
           : null,
+      registeredFromApp: map['registeredFromApp'] as String?,
     );
   }
 }
@@ -60,6 +65,8 @@ class Chat {
   final List<String> deletedFor; // Users who deleted this chat
   final bool isDeleted; // Hard delete flag
   final int isBlock; // 0 = not blocked, 1 = blocked
+  /// Per user: hide messages at or before this time (set when user deletes chat).
+  final Map<String, DateTime> lastClearedAt;
 
   Chat({
     required this.chatId,
@@ -73,6 +80,7 @@ class Chat {
     this.deletedFor = const [],
     this.isDeleted = false,
     this.isBlock = 0, // ✅ default 0
+    this.lastClearedAt = const {},
   });
 
   Map<String, dynamic> toMap() {
@@ -89,10 +97,23 @@ class Chat {
       'deletedFor': deletedFor,
       'isDeleted': isDeleted,
       'isBlock': isBlock, // ✅ added
+      'lastClearedAt': lastClearedAt.map(
+        (k, v) => MapEntry(k, Timestamp.fromDate(v)),
+      ),
     };
   }
 
   factory Chat.fromMap(Map<String, dynamic> map) {
+    final clearedRaw = map['lastClearedAt'];
+    final lastCleared = <String, DateTime>{};
+    if (clearedRaw is Map) {
+      for (final e in clearedRaw.entries) {
+        final v = e.value;
+        if (v is Timestamp) {
+          lastCleared[e.key.toString()] = v.toDate();
+        }
+      }
+    }
     return Chat(
       chatId: map['chatId'] ?? '',
       participants: List<String>.from(map['participants'] ?? []),
@@ -107,6 +128,7 @@ class Chat {
       deletedFor: List<String>.from(map['deletedFor'] ?? []),
       isDeleted: map['isDeleted'] ?? false,
       isBlock: map['isBlock'] ?? 0, // ✅ default 0
+      lastClearedAt: lastCleared,
     );
   }
 
@@ -128,6 +150,7 @@ class Chat {
     List<String>? deletedFor,
     bool? isDeleted,
     int? isBlock,
+    Map<String, DateTime>? lastClearedAt,
   }) {
     return Chat(
       chatId: chatId ?? this.chatId,
@@ -141,6 +164,7 @@ class Chat {
       deletedFor: deletedFor ?? this.deletedFor,
       isDeleted: isDeleted ?? this.isDeleted,
       isBlock: isBlock ?? this.isBlock, // ✅ handled in copyWith
+      lastClearedAt: lastClearedAt ?? this.lastClearedAt,
     );
   }
 }

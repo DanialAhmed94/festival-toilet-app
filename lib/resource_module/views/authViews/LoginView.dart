@@ -9,6 +9,11 @@ import '../../utilities/customTextField.dart';
 import 'SignupView.dart';
 import 'ForgotPasswordView.dart';
 
+EdgeInsets _loginFieldScrollPadding(BuildContext context) {
+  final keyboardBottom = MediaQuery.viewInsetsOf(context).bottom;
+  return EdgeInsets.fromLTRB(20, 20, 20, keyboardBottom + 24);
+}
+
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
 
@@ -60,6 +65,7 @@ class _LoginViewState extends State<LoginView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           // Background Image covering the entire screen
@@ -72,12 +78,13 @@ class _LoginViewState extends State<LoginView> {
           // SingleChildScrollView for content
           Positioned.fill(
             child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               child: Padding(
                 padding: EdgeInsets.only(
                   top: MediaQuery.of(context).size.height * 0.4,
                   left: 16.0,
                   right: 16.0,
-                  bottom: 16.0,
+                  bottom: MediaQuery.viewInsetsOf(context).bottom + 16.0,
                 ),
                 child: Column(
                   children: [
@@ -106,6 +113,7 @@ class _LoginViewState extends State<LoginView> {
                                 hintText: "Email",
                                 postfixIcon: Icons.email,
                                 textInputAction: TextInputAction.next,
+                                scrollPadding: _loginFieldScrollPadding(context),
                                 onFieldSubmitted: (value) {
                                   FocusScope.of(context).requestFocus(_passwordFocus);
                                 },
@@ -131,6 +139,7 @@ class _LoginViewState extends State<LoginView> {
                                 postfixIcon: Icons.lock,
                                 obscureText: _isPasswordObscured,
                                 textInputAction: TextInputAction.done,
+                                scrollPadding: _loginFieldScrollPadding(context),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _isPasswordObscured ? Icons.visibility : Icons.visibility_off,

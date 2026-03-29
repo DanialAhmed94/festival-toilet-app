@@ -10,6 +10,13 @@ import '../../utilities/customTextField.dart';
 import 'LoginView.dart';
 import 'otpVerification.dart';
 
+/// Bottom inset must include the on-screen keyboard when the scaffold does not
+/// resize ([resizeToAvoidBottomInset]: false), or scroll-into-view stops too early.
+EdgeInsets _signupKeyboardScrollPadding(BuildContext context) {
+  final keyboardBottom = MediaQuery.viewInsetsOf(context).bottom;
+  return EdgeInsets.fromLTRB(20, 20, 20, keyboardBottom + 24);
+}
+
 class SignupView extends StatefulWidget {
   const SignupView({super.key});
 
@@ -44,32 +51,6 @@ class _SignupViewState extends State<SignupView> {
 
   /// 👇 Track Terms agreement
   bool _agreedToTerms = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _setupFocusListeners();
-  }
-
-  void _setupFocusListeners() {
-    _fullNameFocus.addListener(() => _scrollToFocusedField());
-    _emailFocus.addListener(() => _scrollToFocusedField());
-    _phoneFocus.addListener(() => _scrollToFocusedField());
-    _passwordFocus.addListener(() => _scrollToFocusedField());
-    _confirmPasswordFocus.addListener(() => _scrollToFocusedField());
-  }
-
-  void _scrollToFocusedField() {
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent * 0.3,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
-  }
 
   @override
   void dispose() {
@@ -167,6 +148,9 @@ class _SignupViewState extends State<SignupView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Keep body full-screen so the background image does not re-crop/jump when
+      // the keyboard opens (resize would shrink the Stack and BoxFit.cover shifts).
+      resizeToAvoidBottomInset: false,
       body: _SignupBody(
         scrollController: _scrollController,
         formKey: _formKey,
@@ -376,7 +360,7 @@ class _MainContent extends StatelessWidget {
                     onConfirmPasswordVisibilityChanged:
                         onConfirmPasswordVisibilityChanged,
                   ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.04),
                   Center(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.start,
@@ -431,7 +415,9 @@ class _MainContent extends StatelessWidget {
                   ),
                   _SubmitButton(onSubmitForm: onSubmitForm),
                   _LoginLink(),
-                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: MediaQuery.paddingOf(context).bottom + 32,
+                  ),
                 ],
               ),
             ),
@@ -564,6 +550,7 @@ class _FullNameField extends StatelessWidget {
       postfixIcon: Icons.person,
       textInputAction: TextInputAction.next,
       onFieldSubmitted: onFieldSubmitted,
+      scrollPadding: _signupKeyboardScrollPadding(context),
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Please enter your full name';
@@ -594,6 +581,7 @@ class _EmailField extends StatelessWidget {
       postfixIcon: Icons.email,
       textInputAction: TextInputAction.next,
       onFieldSubmitted: onFieldSubmitted,
+      scrollPadding: _signupKeyboardScrollPadding(context),
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Please enter your email';
@@ -628,6 +616,7 @@ class _PhoneField extends StatelessWidget {
       textInputAction: TextInputAction.next,
       keyboardType: TextInputType.phone,
       onFieldSubmitted: onFieldSubmitted,
+      scrollPadding: _signupKeyboardScrollPadding(context),
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Please enter your phone number';
@@ -674,6 +663,7 @@ class _PasswordField extends StatelessWidget {
         },
       ),
       onFieldSubmitted: onFieldSubmitted,
+      scrollPadding: _signupKeyboardScrollPadding(context),
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Please enter your password';
@@ -722,6 +712,7 @@ class _ConfirmPasswordField extends StatelessWidget {
         },
       ),
       onFieldSubmitted: onFieldSubmitted,
+      scrollPadding: _signupKeyboardScrollPadding(context),
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Please confirm your password';

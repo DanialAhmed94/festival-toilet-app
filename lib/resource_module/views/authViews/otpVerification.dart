@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pinput/pinput.dart';
@@ -290,6 +291,9 @@ class _PhoneOtpViewState extends State<PhoneOtpView>
         }
       }
 
+      debugPrint(
+        '[Signup/OTP] PhoneAuth credential validated → _onVerified() / backend signup',
+      );
       _onVerified();
     } on FirebaseAuthException catch (e) {
       print('🔍 Debug: FirebaseAuthException caught: ${e.code} - ${e.message}');
@@ -331,17 +335,23 @@ class _PhoneOtpViewState extends State<PhoneOtpView>
   }
 
   Future<void> _onVerified() async {
-    print('🔍 Debug: Phone verification successful - proceeding to signup');
+    debugPrint(
+      '[Signup/OTP] Firebase phone OTP verified — starting backend signup',
+    );
+    debugPrint(
+      '[Signup/OTP] email=${widget.email} phone=${widget.phoneE164} name=${widget.fullName}',
+    );
 
     // Double-check no Firebase user remains signed in
     try {
       if (_auth.currentUser != null) {
         await _auth.signOut();
-        print(
-            '🔍 Debug: Final cleanup - signed out any remaining Firebase user');
+        debugPrint(
+          '[Signup/OTP] Signed out Firebase Auth session after OTP check',
+        );
       }
     } catch (e) {
-      print('🔍 Debug: Error during final cleanup: $e');
+      debugPrint('[Signup/OTP] Firebase sign-out cleanup error: $e');
     }
 
     // Clear verification data
@@ -353,7 +363,7 @@ class _PhoneOtpViewState extends State<PhoneOtpView>
     await prefs.setString('signup_phone', widget.phoneE164);
     await prefs.setBool('phone_verified', true); // Mark phone as verified
 
-    print('🔍 Debug: Phone verification data saved locally');
+    debugPrint('[Signup/OTP] SharedPreferences: signup_email, signup_phone, phone_verified=true');
 
     if (!mounted) return;
 
@@ -361,7 +371,7 @@ class _PhoneOtpViewState extends State<PhoneOtpView>
     try {
       setState(() => _loading = true);
 
-      print('🔍 Debug: Calling signup API...');
+      debugPrint('[Signup/OTP] Calling signUp() → POST /authup');
       await signUp(
         context,
         widget.fullName,
@@ -370,11 +380,9 @@ class _PhoneOtpViewState extends State<PhoneOtpView>
         widget.phoneE164,
       );
 
-      // If signup is successful, the API will handle navigation
-      print('🔍 Debug: Signup completed successfully');
+      debugPrint('[Signup/OTP] signUp() finished (success dialog / navigation if applicable)');
     } catch (e) {
-      print('🔍 Debug: Error during signup: $e');
-      print('🔍 Debug: Signup error type: ${e.runtimeType}');
+      debugPrint('[Signup/OTP] signUp() threw: $e (${e.runtimeType})');
       setState(() {
         _error = 'Signup failed. Please try again.';
       });

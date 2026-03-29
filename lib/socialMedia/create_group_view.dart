@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../services/firestore_chat_service.dart';
 import '../../services/firestore_user_service.dart';
+import '../resource_module/constants/appConstants.dart';
 import '../resource_module/model/chat_models.dart';
 import 'chat_detail_view.dart';
 
@@ -79,8 +81,22 @@ class _CreateGroupViewState extends State<CreateGroupView> {
     });
 
     try {
-      // Search for user by phone number
+      debugPrint(
+        '[ChatSearch] CreateGroupView search phone=$number '
+        'registeredFromApp=${AppConstants.firebaseRegistrationAppId}',
+      );
       final foundUser = await FirestoreUserService.searchUserByPhone(number);
+
+      if (foundUser != null) {
+        debugPrint(
+          '[ChatSearch] CreateGroupView found userId=${foundUser.userId} '
+          'name=${foundUser.userName}',
+        );
+      } else {
+        debugPrint(
+          '[ChatSearch] CreateGroupView no user for this app (phone=$number)',
+        );
+      }
 
       setState(() {
         _isLoading = false;
@@ -89,7 +105,8 @@ class _CreateGroupViewState extends State<CreateGroupView> {
       });
 
       if (foundUser == null) {
-        _showErrorSnackBar('No user found with this phone number');
+        _showErrorSnackBar(
+            'No user found with this phone number in this app');
       }
     } catch (e) {
       setState(() {

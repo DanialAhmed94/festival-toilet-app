@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import '../resource_module/model/chat_models.dart';
+import '../widgets/firebase_stream_ui.dart';
 import 'chat_detail_view.dart';
 import 'create_chat_view.dart';
 import 'create_group_view.dart';
@@ -19,6 +20,9 @@ class _InboxViewState extends State<InboxView> {
   int _totalUnreadCount = 0;
   bool _isNavigating = false; // Prevent multiple navigation
   String? _navigatingToChatId; // Track which chat is being navigated to
+  bool _userIdResolved = false;
+  String? _userIdLoadError;
+  int _chatsStreamRetryKey = 0;
 
   @override
   void initState() {
@@ -27,15 +31,28 @@ class _InboxViewState extends State<InboxView> {
   }
 
   Future<void> _loadCurrentUser() async {
+    if (!mounted) return;
+    setState(() {
+      _userIdLoadError = null;
+      _userIdResolved = false;
+    });
     try {
       _currentUserId = await FirestoreUserService.getUserId();
       print('🔍 Current user ID loaded: $_currentUserId');
-      if (_currentUserId != null) {
-        setState(() {});
-      }
     } catch (e) {
       print('❌ Error loading current user: $e');
+      _userIdLoadError = userFriendlyFirebaseError(e);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _userIdResolved = true;
+        });
+      }
     }
+  }
+
+  void _retryChatsStream() {
+    setState(() => _chatsStreamRetryKey++);
   }
 
   void _addNewChat(ChatListItem newChat) {
@@ -384,15 +401,45 @@ class _InboxViewState extends State<InboxView> {
   }
 
   Widget _buildMessagesList() {
+    if (!_userIdResolved) {
+      return firebaseStreamLoading(message: 'Loading your account…');
+    }
+    if (_userIdLoadError != null) {
+      return firebaseStreamError(
+        context: context,
+        message: _userIdLoadError!,
+        onRetry: _loadCurrentUser,
+        icon: Icons.person_off_outlined,
+      );
+    }
     if (_currentUserId == null) {
-      return Center(child: Text('Please login to view chats'));
+      return Center(
+        child: Text(
+          'Please sign in to view chats',
+          style: TextStyle(
+            fontFamily: 'Ubuntu',
+            fontSize: 15,
+            color: Colors.grey.shade700,
+          ),
+        ),
+      );
     }
 
     return StreamBuilder<List<ChatListItem>>(
+      key: ValueKey(_chatsStreamRetryKey),
       stream: FirestoreChatService.streamUserChats(_currentUserId!),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Error loading chats: ${snapshot.error}'));
+          return firebaseStreamError(
+            context: context,
+            message: userFriendlyFirebaseError(snapshot.error),
+            onRetry: _retryChatsStream,
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return firebaseStreamLoading(message: 'Loading conversations…');
         }
 
         final allChats = snapshot.data ?? [];
@@ -473,15 +520,45 @@ class _InboxViewState extends State<InboxView> {
   }
 
   Widget _buildGroupsList() {
+    if (!_userIdResolved) {
+      return firebaseStreamLoading(message: 'Loading your account…');
+    }
+    if (_userIdLoadError != null) {
+      return firebaseStreamError(
+        context: context,
+        message: _userIdLoadError!,
+        onRetry: _loadCurrentUser,
+        icon: Icons.person_off_outlined,
+      );
+    }
     if (_currentUserId == null) {
-      return Center(child: Text('Please login to view groups'));
+      return Center(
+        child: Text(
+          'Please sign in to view groups',
+          style: TextStyle(
+            fontFamily: 'Ubuntu',
+            fontSize: 15,
+            color: Colors.grey.shade700,
+          ),
+        ),
+      );
     }
 
     return StreamBuilder<List<ChatListItem>>(
+      key: ValueKey(_chatsStreamRetryKey),
       stream: FirestoreChatService.streamUserChats(_currentUserId!),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Error loading groups: ${snapshot.error}'));
+          return firebaseStreamError(
+            context: context,
+            message: userFriendlyFirebaseError(snapshot.error),
+            onRetry: _retryChatsStream,
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return firebaseStreamLoading(message: 'Loading groups…');
         }
 
         final allChats = snapshot.data ?? [];

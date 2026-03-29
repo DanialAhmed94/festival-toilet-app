@@ -12,6 +12,9 @@ Widget customTextField({
   String? Function(String?)? validator,
   IconData? postfixIcon, // Optional postfix icon
   Widget? suffixIcon, // Optional suffix icon (e.g., for visibility toggle)
+  /// Extra space the scrollable keeps below the field when scrolling it into view
+  /// (use bottom >= keyboard height when [resizeToAvoidBottomInset] is false).
+  EdgeInsets scrollPadding = const EdgeInsets.all(20.0),
 }) {
   return TextFormField(
     controller: controller,
@@ -21,6 +24,7 @@ Widget customTextField({
     textInputAction: textInputAction,
     onFieldSubmitted: onFieldSubmitted,
     validator: validator,
+    scrollPadding: scrollPadding,
     decoration: InputDecoration(
       hintText: hintText,
       hintStyle: TextStyle(
