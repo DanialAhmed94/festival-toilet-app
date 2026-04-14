@@ -130,10 +130,19 @@ class _PhoneOtpViewState extends State<PhoneOtpView>
         timeout: const Duration(seconds: 60),
         forceResendingToken: isResend ? _resendToken : null,
         verificationCompleted: (PhoneAuthCredential cred) async {
-          print(
-              '🔍 Debug: Auto-verification completed - ignoring to prevent Firebase user creation');
-          print('🔍 Debug: Auto-verification credential: ${cred.smsCode}');
-          // Do nothing - we don't want auto-verification to create Firebase users
+          print('🔍 Debug: Auto-verification completed with code: ${cred.smsCode}');
+          // On Android, auto-verification may silently sign in.
+          // Delete any auto-created Firebase Auth user immediately.
+          try {
+            final firebaseUser = _auth.currentUser;
+            if (firebaseUser != null) {
+              await firebaseUser.delete();
+              print('🔍 Debug: Deleted auto-created Firebase Auth user from auto-verification');
+            }
+          } catch (e) {
+            try { await _auth.signOut(); } catch (_) {}
+            print('🔍 Debug: Auto-verification cleanup error: $e');
+          }
         },
         verificationFailed: (FirebaseAuthException e) {
           print('🔍 Debug: Verification failed - ${e.code}: ${e.message}');
@@ -252,40 +261,42 @@ class _PhoneOtpViewState extends State<PhoneOtpView>
           PhoneAuthProvider.credential(verificationId: verId, smsCode: code);
       print('🔍 Debug: Credential created successfully');
 
-      // Try to sign in to verify the OTP is valid
       print('🔍 Debug: Attempting to sign in with credential...');
       try {
         final userCredential = await _auth.signInWithCredential(cred);
         print('🔍 Debug: OTP verification successful');
         print('🔍 Debug: User signed in: ${userCredential.user?.uid}');
 
-        // Immediately sign out to prevent creating a permanent Firebase user
-        await _auth.signOut();
-        print('🔍 Debug: Signed out to prevent Firebase user creation');
+        // Delete the Firebase Auth user to prevent ghost users.
+        // We only use phone auth for OTP validation, not as a permanent account.
+        final firebaseUser = _auth.currentUser;
+        if (firebaseUser != null) {
+          await firebaseUser.delete();
+          print('🔍 Debug: Deleted temporary Firebase Auth user to prevent ghost user');
+        }
       } catch (error) {
         print('🔍 Debug: Error during verification: $error');
         print('🔍 Debug: Error type: ${error.runtimeType}');
         print('🔍 Debug: Error toString: ${error.toString()}');
 
-        // Check if this is a pigeon error (type cast error) vs invalid OTP
         if (error.toString().contains('PigeonUserDetails') ||
             error
                 .toString()
                 .contains('type \'List<Object?>\' is not a subtype')) {
-          // This is a pigeon error - OTP was likely valid but Firebase had internal issues
           print('🔍 Debug: Pigeon error detected - assuming OTP is valid');
 
-          // Ensure no user is signed in
           try {
-            if (_auth.currentUser != null) {
-              await _auth.signOut();
-              print('🔍 Debug: Cleaned up any potential Firebase user');
+            final firebaseUser = _auth.currentUser;
+            if (firebaseUser != null) {
+              await firebaseUser.delete();
+              print('🔍 Debug: Deleted temporary Firebase Auth user after pigeon error');
             }
           } catch (e) {
-            print('🔍 Debug: Error during cleanup: $e');
+            // If delete fails, fall back to sign out
+            try { await _auth.signOut(); } catch (_) {}
+            print('🔍 Debug: Error deleting user, signed out instead: $e');
           }
         } else {
-          // This is likely an invalid OTP error - rethrow to be handled by FirebaseAuthException
           print('🔍 Debug: Non-pigeon error - likely invalid OTP, rethrowing');
           rethrow;
         }
@@ -342,16 +353,19 @@ class _PhoneOtpViewState extends State<PhoneOtpView>
       '[Signup/OTP] email=${widget.email} phone=${widget.phoneE164} name=${widget.fullName}',
     );
 
-    // Double-check no Firebase user remains signed in
+    // Delete any leftover Firebase Auth user to prevent ghost accounts
     try {
-      if (_auth.currentUser != null) {
-        await _auth.signOut();
+      final firebaseUser = _auth.currentUser;
+      if (firebaseUser != null) {
+        await firebaseUser.delete();
         debugPrint(
-          '[Signup/OTP] Signed out Firebase Auth session after OTP check',
+          '[Signup/OTP] Deleted leftover Firebase Auth user in _onVerified cleanup',
         );
       }
     } catch (e) {
-      debugPrint('[Signup/OTP] Firebase sign-out cleanup error: $e');
+      // If delete fails (e.g. already deleted), sign out as fallback
+      try { await _auth.signOut(); } catch (_) {}
+      debugPrint('[Signup/OTP] Firebase cleanup error (delete/signout): $e');
     }
 
     // Clear verification data

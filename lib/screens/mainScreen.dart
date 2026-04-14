@@ -69,7 +69,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         appBar: AppBar(
           toolbarHeight: 75,
           title: Text(
-            'Crap Adviser',
+            'The Festival Toilet',
             style: TextStyle(
               fontFamily: 'Poppins-Bold',
               fontWeight: FontWeight.bold,
@@ -209,6 +209,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                                       child: Text(
                                         addressSnapshot.data ??
                                             'Unknown Address',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
                                           fontFamily: 'Poppins-SemiBold',
                                           fontSize: 15,

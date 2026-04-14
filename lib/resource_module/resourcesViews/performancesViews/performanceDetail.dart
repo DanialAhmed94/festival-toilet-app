@@ -98,43 +98,43 @@ Performancedetail({required this.performance});
                       ],
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Text content
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Festival",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Festival",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
                               ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              performance.festival?.nameOrganizer ??
-                                  performance.festival?.description ??
-                                  "No title specified",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[800],
+                              SizedBox(height: 8),
+                              Text(
+                                performance.festival?.nameOrganizer ??
+                                    performance.festival?.description ??
+                                    "No title specified",
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[800],
+                                ),
                               ),
-                            ),
-
-
-                          ],
+                            ],
+                          ),
                         ),
-                        Spacer(), // Pushes the image to the right edge
-                        // Image positioned on the right edge
-                        Align(
-                          alignment: Alignment.centerRight,
+                        SizedBox(width: 8),
+                        SizedBox(
+                          height: 60,
+                          width: 60,
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.asset(
                               "assets/resource_images/performanceTitle.png",
-                              height: 60, // Adjust height as needed
-                              width: 60,  // Adjust width as needed
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -160,40 +160,42 @@ Performancedetail({required this.performance});
                       ],
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Text content
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Event",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Event",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
                               ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              performance.event?.eventTitle ??
-                                  "No title specified",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[800],
+                              SizedBox(height: 8),
+                              Text(
+                                performance.event?.eventTitle ??
+                                    "No title specified",
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[800],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        Spacer(), // Pushes the image to the right edge
-                        // Image positioned on the right edge
-                        Align(
-                          alignment: Alignment.centerRight,
+                        SizedBox(width: 8),
+                        SizedBox(
+                          height: 60,
+                          width: 60,
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.asset(
                               "assets/resource_images/performanceTitle.png",
-                              height: 60, // Adjust height as needed
-                              width: 60,  // Adjust width as needed
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -218,39 +220,41 @@ Performancedetail({required this.performance});
                       ],
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Text content
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Performance Title",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Performance Title",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
                               ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                             performance.performanceTitle?? " No title specified",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[800],
+                              SizedBox(height: 8),
+                              Text(
+                                performance.performanceTitle ?? "No title specified",
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[800],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        Spacer(), // Pushes the image to the right edge
-                        // Image positioned on the right edge
-                        Align(
-                          alignment: Alignment.centerRight,
+                        SizedBox(width: 8),
+                        SizedBox(
+                          height: 60,
+                          width: 60,
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.asset(
                               "assets/resource_images/performanceTitle.png",
-                              height: 60, // Adjust height as needed
-                              width: 60,  // Adjust width as needed
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -274,39 +278,41 @@ Performancedetail({required this.performance});
                       ],
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Text content
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Artist",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Artist",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
                               ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              performance.artistName?? " No title specified",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[800],
+                              SizedBox(height: 8),
+                              Text(
+                                performance.artistName ?? "No title specified",
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[800],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        Spacer(), // Pushes the image to the right edge
-                        // Image positioned on the right edge
-                        Align(
-                          alignment: Alignment.centerRight,
+                        SizedBox(width: 8),
+                        SizedBox(
+                          height: 60,
+                          width: 60,
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.asset(
                               "assets/resource_images/performanceArtist.png",
-                              height: 60, // Adjust height as needed
-                              width: 60,  // Adjust width as needed
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -330,43 +336,33 @@ Performancedetail({required this.performance});
                       ],
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Text content
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Participants",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Participants",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
                               ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              performance.participantName?? " No title specified",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[800],
+                              SizedBox(height: 8),
+                              Text(
+                                performance.participantName ?? "No title specified",
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[800],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        Spacer(), // Pushes the image to the right edge
-                        // Image positioned on the right edge
-                        // Align(
-                        //   alignment: Alignment.centerRight,
-                        //   child: ClipRRect(
-                        //     borderRadius: BorderRadius.circular(8),
-                        //     child: Image.asset(
-                        //       "assets/images/eventTitle.png",
-                        //       height: 60, // Adjust height as needed
-                        //       width: 60,  // Adjust width as needed
-                        //       fit: BoxFit.cover,
-                        //     ),
-                        //   ),
-                        // ),
                       ],
                     ),
                   ),
@@ -386,39 +382,41 @@ Performancedetail({required this.performance});
                       ],
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Text content
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Special Guest",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Special Guest",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
                               ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              performance.specialGuests?? " No special guest invited",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[800],
+                              SizedBox(height: 8),
+                              Text(
+                                performance.specialGuests ?? "No special guest invited",
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[800],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        Spacer(), // Pushes the image to the right edge
-                        // Image positioned on the right edge
-                        Align(
-                          alignment: Alignment.centerRight,
+                        SizedBox(width: 8),
+                        SizedBox(
+                          height: 60,
+                          width: 60,
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.asset(
                               "assets/resource_images/specialGuest.png",
-                              height: 60, // Adjust height as needed
-                              width: 60,  // Adjust width as needed
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -620,44 +618,26 @@ Performancedetail({required this.performance});
                         ),
                       ],
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Text content
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Notes",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              " Nothing to show",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[800],
-                              ),
-                            ),
-                          ],
+                        Text(
+                          "Notes",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
                         ),
-                        Spacer(), // Pushes the image to the right edge
-                        // Image positioned on the right edge
-                        // Align(
-                        //   alignment: Alignment.centerRight,
-                        //   child: ClipRRect(
-                        //     borderRadius: BorderRadius.circular(8),
-                        //     child: Image.asset(
-                        //       "assets/images/eventTitle.png",
-                        //       height: 60, // Adjust height as needed
-                        //       width: 60,  // Adjust width as needed
-                        //       fit: BoxFit.cover,
-                        //     ),
-                        //   ),
-                        // ),
+                        SizedBox(height: 12),
+                        Text(
+                          "Nothing to show",
+                          style: TextStyle(
+                            fontSize: 16,
+                            height: 1.5,
+                            color: Colors.grey[800],
+                          ),
+                        ),
                       ],
                     ),
                   ),

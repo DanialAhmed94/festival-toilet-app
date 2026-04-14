@@ -147,7 +147,7 @@ class MyDrawer extends StatelessWidget {
     return Drawer(
       child: Container( decoration: BoxDecoration(
         image: DecorationImage(
-          image: AssetImage('assets/images/drawerBackground.png'), // Change this to your image path
+          image: AssetImage('assets/images/drawerBackground_updated.png'), // Change this to your image path
           fit: BoxFit.cover, // Control how the image scales
         ),
       ),
@@ -155,7 +155,7 @@ class MyDrawer extends StatelessWidget {
           children: [
             AppBar(
               title: Text(
-                "Hello Crap Adviser",
+                "Hello",
                 style: TextStyle(fontFamily: 'Poppins-Bold'),
               ),
               automaticallyImplyLeading: false,

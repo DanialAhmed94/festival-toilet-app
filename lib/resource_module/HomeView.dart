@@ -3,7 +3,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crapadvisor/main.dart';
 import 'package:crapadvisor/resource_module/apis/logout.dart';
 import 'package:crapadvisor/resource_module/apis/deleteAccount_api.dart';
-import 'package:crapadvisor/resource_module/providers/refreshNotifier.dart';
 import 'package:crapadvisor/resource_module/views/authViews/LoginView.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -66,15 +65,6 @@ class _HomeViewState extends State<HomeView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<FestivalProvider>(context, listen: false)
           .fetchFestivals(context);
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final notificationProvider =
-          Provider.of<NotificationProvider>(context, listen: false);
-      if (notificationProvider.shouldRefreshHome) {
-        _fetchFestivalData(context);
-        notificationProvider
-            .setShouldRefreshHome(false); // Reset flag after refreshing
-      }
     });
   }
 

@@ -18,13 +18,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_options.dart';
 import 'resource_module/providers/activitesProvider.dart';
-import 'resource_module/providers/refreshNotifier.dart';
 import 'resource_module/utilities/sharedPrefs.dart';
-import 'resource_module/views/authViews/LoginView.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+RemoteMessage? _pendingNotificationMessage;
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -34,7 +33,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
 }
 
-/// Show local notification
 Future<void> _showNotification(String title, String body) async {
   const androidDetails = AndroidNotificationDetails(
     'high_importance_channel',
@@ -50,29 +48,21 @@ Future<void> _showNotification(String title, String body) async {
 
   const notificationDetails = NotificationDetails(android: androidDetails);
   await flutterLocalNotificationsPlugin.show(
-      0, title, body, notificationDetails);
+      0, title, body, notificationDetails,
+      payload: 'deep_link_home');
 }
 
-/// Navigate based on login state
-Future<void> _navigateToAppropriateScreen() async {
-  bool isLoggedIn = (await getIsLogedIn()) ?? false;
+Future<void> _navigateByLoginState() async {
+  final navigator = navigatorKey.currentState;
+  if (navigator == null) return;
 
-  final notificationProvider = Provider.of<NotificationProvider>(
-      navigatorKey.currentContext!,
-      listen: false);
+  final isLoggedIn = (await getIsLogedIn()) ?? false;
+  final destination = isLoggedIn ? HomeView() : AppSelectionView();
 
-  if (isLoggedIn) {
-    notificationProvider.setShouldRefreshHome(true);
-    navigatorKey.currentState?.pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => HomeView()),
-      (route) => false,
-    );
-  } else {
-    navigatorKey.currentState?.pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => LoginView()),
-      (route) => false,
-    );
-  }
+  navigator.pushAndRemoveUntil(
+    MaterialPageRoute(builder: (_) => destination),
+    (route) => false,
+  );
 }
 
 /// Save FCM token locally & to Firestore
@@ -94,7 +84,6 @@ Future<void> _saveFcmTokenToServer(String? token) async {
   }
 }
 
-/// Initialize local notifications
 Future<void> initializeLocalNotifications() async {
   const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
   final iosSettings = DarwinInitializationSettings(
@@ -102,7 +91,7 @@ Future<void> initializeLocalNotifications() async {
     requestBadgePermission: true,
     requestAlertPermission: true,
     onDidReceiveLocalNotification: (id, title, body, payload) async {
-      print("iOS Local Notification: $title, $body, $payload");
+      if (payload != null) _navigateByLoginState();
     },
   );
   final linuxSettings = LinuxInitializationSettings(
@@ -118,24 +107,22 @@ Future<void> initializeLocalNotifications() async {
   await flutterLocalNotificationsPlugin.initialize(
     settings,
     onDidReceiveNotificationResponse: (response) async {
-      print("Notification tapped with payload: ${response.payload}");
+      if (response.payload != null && response.payload!.isNotEmpty) {
+        _navigateByLoginState();
+      }
     },
   );
 }
 
-/// Initialize FCM & handle tokens
 Future<void> initializeFCM() async {
   final messaging = FirebaseMessaging.instance;
 
-  // Request permission
   await messaging.requestPermission(alert: true, badge: true, sound: true);
 
-  // Enable auto-init (Android)
   if (Platform.isAndroid) {
     await messaging.setAutoInitEnabled(true);
   }
 
-  // iOS: ensure APNS token
   if (Platform.isIOS) {
     final apnsToken = await messaging.getAPNSToken();
     if (apnsToken != null) {
@@ -143,20 +130,16 @@ Future<void> initializeFCM() async {
     }
   }
 
-  // Get current token
   final fcmToken = await messaging.getToken();
   print("🔑 Initial FCM token: $fcmToken");
   await _saveFcmTokenToServer(fcmToken);
 
-  // Token refresh listener
   FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
     print("♻️ FCM Token refreshed: $newToken");
     await _saveFcmTokenToServer(newToken);
   });
 
-  // Foreground messages
   FirebaseMessaging.onMessage.listen((message) {
-    print("📩 Foreground message: ${message.messageId}");
     final notification = message.notification;
     if (notification != null) {
       _showNotification(
@@ -164,19 +147,10 @@ Future<void> initializeFCM() async {
     }
   });
 
-  // When user taps a notification
-  FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationClick);
+  FirebaseMessaging.onMessageOpenedApp.listen((_) => _navigateByLoginState());
 
-  // App opened from terminated state
-  final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-  if (initialMessage != null) {
-    _handleNotificationClick(initialMessage);
-  }
-}
-
-/// Handle notification tap
-Future<void> _handleNotificationClick(RemoteMessage message) async {
-  await _navigateToAppropriateScreen();
+  _pendingNotificationMessage =
+      await FirebaseMessaging.instance.getInitialMessage();
 }
 
 void main() async {
@@ -210,7 +184,6 @@ void main() async {
         ChangeNotifierProvider(create: (_) => BulletinProvider()),
         ChangeNotifierProvider(create: (_) => EventProvider()),
         ChangeNotifierProvider(create: (_) => ToiletProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => ActivityProvider()),
       ],
       child: const MyApp(),
@@ -218,8 +191,24 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_pendingNotificationMessage != null) {
+        _pendingNotificationMessage = null;
+        _navigateByLoginState();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
