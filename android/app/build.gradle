@@ -37,7 +37,6 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
-        // ✅ Add this line
         coreLibraryDesugaringEnabled true
     }
 
@@ -52,7 +51,7 @@ android {
     defaultConfig {
         applicationId "com.crapadviser.user"
         minSdkVersion 24
-        targetSdkVersion 34
+        targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
@@ -76,5 +75,6 @@ flutter {
     source '../..'
 }
 
-dependencies { // ✅ Add this line
-    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.4"}
+dependencies {
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.4"
+}

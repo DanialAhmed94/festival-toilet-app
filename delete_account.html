@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delete Your Account — Festival Toilet App</title>
+  <style>
+    :root {
+      --primary: #2E7D32;
+      --primary-light: #E8F5E9;
+      --text: #333;
+      --text-light: #555;
+      --bg: #FAFAFA;
+      --white: #FFF;
+      --border: #E0E0E0;
+      --danger: #C62828;
+      --danger-light: #FFEBEE;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.75;
+      font-size: 16px;
+    }
+    .header {
+      background: linear-gradient(135deg, #1B5E20, #43A047);
+      color: var(--white);
+      padding: 44px 24px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2rem; margin-bottom: 6px; }
+    .header p { opacity: 0.9; }
+    .container { max-width: 780px; margin: 0 auto; padding: 28px 24px 60px; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+    h2 {
+      font-size: 1.2rem;
+      color: var(--primary);
+      margin-bottom: 14px;
+    }
+    h3 {
+      font-size: 1.05rem;
+      color: var(--text);
+      margin: 20px 0 10px;
+    }
+    p { margin-bottom: 12px; }
+    ul, ol { margin: 8px 0 14px 22px; }
+    li { margin-bottom: 8px; }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      margin-left: 0;
+      padding: 0;
+    }
+    .steps li {
+      counter-increment: step;
+      padding: 14px 18px 14px 60px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 18px;
+      top: 14px;
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      color: var(--white);
+      border-radius: 50%;
+      font-size: 0.9rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .warning-box {
+      background: var(--danger-light);
+      border-left: 4px solid var(--danger);
+      padding: 16px 20px;
+      border-radius: 0 10px 10px 0;
+      margin: 20px 0;
+    }
+    .warning-box h3 {
+      color: var(--danger);
+      margin-top: 0;
+    }
+    .warning-box ul { margin-bottom: 0; }
+    .data-list {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 24px;
+      margin: 12px 0;
+    }
+    .data-list ul { margin-bottom: 0; }
+    .help-box {
+      background: var(--primary-light);
+      border: 1px solid var(--primary);
+      border-radius: 10px;
+      padding: 18px 24px;
+      margin-top: 20px;
+    }
+    .footer {
+      text-align: center;
+      padding: 28px 24px;
+      color: var(--text-light);
+      font-size: 0.88rem;
+      border-top: 1px solid var(--border);
+    }
+    .footer a { margin-left: 6px; }
+    @media (max-width: 600px) {
+      .header { padding: 28px 16px; }
+      .header h1 { font-size: 1.5rem; }
+      .container { padding: 18px 14px 44px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Delete Your Account</h1>
+    <p>Festival Toilet App</p>
+  </div>
+
+  <div class="container">
+
+    <p>Follow the steps below to permanently delete your Festival Toilet App account and all data associated with it.</p>
+
+    <hr>
+
+    <h2>How to Delete Your Account</h2>
+
+    <ol class="steps">
+      <li><strong>Open the Festival Toilet App</strong><br>Launch the Festival Toilet App on your Android device and make sure you are signed in to the account you wish to delete.</li>
+      <li><strong>Go to Festival Resource</strong><br>From the main screen, open the side menu (drawer) and tap on <strong>"Festival Resource"</strong> to open the home page.</li>
+      <li><strong>Tap the three-dot menu</strong><br>On the top-right corner of the Festival Resource home page, tap the <strong>three-dot menu icon (⋮)</strong>.</li>
+      <li><strong>Tap "Delete Account"</strong><br>From the menu that appears, tap <strong>"Delete Account"</strong> (shown in red).</li>
+      <li><strong>Confirm Deletion</strong><br>A confirmation dialog will appear listing all the data that will be removed. Tap <strong>"Delete Account"</strong> to confirm. This action cannot be undone.</li>
+    </ol>
+
+    <hr>
+
+    <div class="warning-box">
+      <h3>Before You Delete</h3>
+      <ul>
+        <li>Account deletion is <strong>permanent and irreversible</strong>. Once deleted, your account cannot be recovered.</li>
+        <li>You will be signed out immediately and will no longer be able to log in with the same credentials.</li>
+        <li>Any content you have posted (reviews, posts, comments, chat messages) may be removed or anonymised.</li>
+      </ul>
+    </div>
+
+    <h3>What Data Gets Deleted</h3>
+
+    <div class="data-list">
+      <ul>
+        <li>Your profile information (name, email, phone number)</li>
+        <li>Your toilet reviews, ratings, and uploaded photos</li>
+        <li>Your social posts, comments, and likes</li>
+        <li>Your chat messages and conversations</li>
+        <li>Your user-submitted toilet locations</li>
+        <li>Your push notification token and preferences</li>
+        <li>Your Firebase authentication credentials</li>
+        <li>Your locally stored session data and cached content</li>
+      </ul>
+    </div>
+
+    <hr>
+
+    <div class="help-box">
+      <h3>Need Help?</h3>
+      <p>
+        If you are unable to access your account or need assistance with account deletion, you can request deletion by contacting us directly:
+      </p>
+      <p><strong>Email:</strong> <a href="mailto:support@crapadvisor.com">support@crapadvisor.com</a></p>
+      <p>
+        Please include the email address or phone number associated with your account so we can locate and process your request. We will respond within 7 business days.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <p>&copy; 2026 Crap Adviser. All rights reserved.</p>
+    <p>Festival Toilet App &mdash; <a href="privacy_policy.html">Privacy Policy</a></p>
+  </div>
+
+</body>
+</html>

@@ -52,10 +52,6 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>This app requires access to your camera to capture photos for events and toilets</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app requires access to your location to show nearby toilets</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>This app requires access to your location to show nearby toilets</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app requires access to your location to show nearby toilets</string>
 	<key>NSPhotoLibraryUsageDescription</key>

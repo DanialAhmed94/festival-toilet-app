@@ -6,7 +6,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
-# followed by an optional build number separated by a +.
+# followed by an optional bauild number separated by a +.
 # Both the version and the builder number may be overridden in flutter
 # build by specifying --build-name and --build-number, respectively.
 # In Android, build-name is used as versionName while build-number used as versionCode.
@@ -82,9 +82,8 @@ flutter_launcher_icons:
   android: true
   ios: true
   # Use a 512x512 PNG for best results (transparent background recommended)
-  image_path: "assets/icons/toiletAppLogo.png"
+  image_path: "assets/icons/toiletAppLog1.png"
   adaptive_icon_background: "#0000FF"
-  adaptive_icon_foreground: "assets/icons/toiletAppLog1.png"
   # Inset (%) so the logo doesn't overflow the safe zone (default 16; higher = smaller logo)
  # adaptive_icon_foreground_inset: 28
   #min_sdk_android: 21

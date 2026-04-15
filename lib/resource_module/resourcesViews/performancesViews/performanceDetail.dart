@@ -606,6 +606,9 @@ Performancedetail({required this.performance});
 
                   Container(
                     width: MediaQuery.of(context).size.width * 0.9,
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.4,
+                    ),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -620,6 +623,7 @@ Performancedetail({required this.performance});
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           "Notes",
@@ -630,12 +634,19 @@ Performancedetail({required this.performance});
                           ),
                         ),
                         SizedBox(height: 12),
-                        Text(
-                          "Nothing to show",
-                          style: TextStyle(
-                            fontSize: 16,
-                            height: 1.5,
-                            color: Colors.grey[800],
+                        Flexible(
+                          child: SingleChildScrollView(
+                            physics: BouncingScrollPhysics(),
+                            child: Text(
+                              performance.technicalRequirementSpecialNotes ?? "Nothing to show",
+                              softWrap: true,
+                              textAlign: TextAlign.justify,
+                              style: TextStyle(
+                                fontSize: 16,
+                                height: 1.5,
+                                color: Colors.grey[800],
+                              ),
+                            ),
                           ),
                         ),
                       ],

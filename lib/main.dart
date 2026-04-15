@@ -7,7 +7,6 @@ import 'package:crapadvisor/resource_module/providers/festivalProvider.dart';
 import 'package:crapadvisor/resource_module/providers/newsProvider.dart';
 import 'package:crapadvisor/resource_module/providers/performanceProvider.dart';
 import 'package:crapadvisor/resource_module/providers/toiletProvider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -47,8 +46,9 @@ Future<void> _showNotification(String title, String body) async {
   );
 
   const notificationDetails = NotificationDetails(android: androidDetails);
+  final notificationId = DateTime.now().millisecondsSinceEpoch % 100000;
   await flutterLocalNotificationsPlugin.show(
-      0, title, body, notificationDetails,
+      notificationId, title, body, notificationDetails,
       payload: 'deep_link_home');
 }
 
@@ -65,22 +65,25 @@ Future<void> _navigateByLoginState() async {
   );
 }
 
-/// Save FCM token locally & to Firestore
+/// Save FCM token locally & to Firestore (using backend user ID)
 Future<void> _saveFcmTokenToServer(String? token) async {
   if (token == null) return;
-  print('testtoken ${token}');
 
   await saveTokenToPrefs(token);
 
-  final userId = FirebaseAuth.instance.currentUser?.uid;
-  print("userId ${userId}");
-  if (userId != null) {
-    await FirebaseFirestore.instance.collection("users").doc(userId).update({
-      "fcmToken": token,
-    });
-    print("✅ FCM token saved for user $userId");
+  final int? userIdInt = await getUserId();
+  final String? userId = userIdInt?.toString();
+  if (userId != null && userId != "0") {
+    try {
+      await FirebaseFirestore.instance.collection("users").doc(userId).set({
+        "fcmToken": token,
+      }, SetOptions(merge: true));
+      print("✅ FCM token saved for user $userId");
+    } catch (e) {
+      print("⚠️ Failed to save FCM token to Firestore: $e");
+    }
   } else {
-    print("⚠️ No logged-in user, skipped saving FCM token");
+    print("⚠️ No logged-in user, skipped saving FCM token to Firestore");
   }
 }
 
@@ -124,9 +127,18 @@ Future<void> initializeFCM() async {
   }
 
   if (Platform.isIOS) {
-    final apnsToken = await messaging.getAPNSToken();
+    String? apnsToken = await messaging.getAPNSToken();
+    if (apnsToken == null) {
+      for (int i = 0; i < 5; i++) {
+        await Future.delayed(const Duration(seconds: 2));
+        apnsToken = await messaging.getAPNSToken();
+        if (apnsToken != null) break;
+      }
+    }
     if (apnsToken != null) {
-      print("📱 APNS token ready: $apnsToken");
+      print("📱 APNS token ready");
+    } else {
+      print("⚠️ APNS token not available after retries");
     }
   }
 
