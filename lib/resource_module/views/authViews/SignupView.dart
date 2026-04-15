@@ -392,7 +392,7 @@ class _MainContent extends StatelessWidget {
                                   recognizer: TapGestureRecognizer()
                                     ..onTap = () async {
                                       final Uri url = Uri.parse(
-                                          "https://crapadvisor.semicolonstech.com/privacy.html");
+                                          "https://thefestivalapps.com/festival-toilet/privacy%20policy.html");
                                       if (!await launchUrl(
                                         url,
                                         mode: LaunchMode.externalApplication,
