@@ -12,7 +12,20 @@
           "package_name": "com.crapadviser.orgnaizer"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "7789770188-no9r19p2cqm3of8pbn0erfed1isdsdsf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.crapadviser.orgnaizer",
+            "certificate_hash": "4a53be9beebaf25c5b29dd4af39a432e33d2c8e7"
+          }
+        },
+        {
+          "client_id": "7789770188-m3l1q2vub09s6atao2krdv5hompbrd33.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBTR8ZK1TfP5OPSJnJf6l-pDs9AVeiJGLA"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "7789770188-m3l1q2vub09s6atao2krdv5hompbrd33.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "7789770188-0js4jlk0jueofghlve5ab8nt664pvhpv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.crapadviser.orgnaizer"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,7 +56,28 @@
           "package_name": "com.crapadviser.user"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "7789770188-2g8hmesmpkqlej0karqjrqc3gqljgtr0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.crapadviser.user",
+            "certificate_hash": "51a770adb48a928ad004d20e73568c5c8551c68b"
+          }
+        },
+        {
+          "client_id": "7789770188-h43ifvob8scfmboup5ng2mso6d0lb2am.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.crapadviser.user",
+            "certificate_hash": "8c5db2da30ecbd30699f6108f4647a860cadd279"
+          }
+        },
+        {
+          "client_id": "7789770188-m3l1q2vub09s6atao2krdv5hompbrd33.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBTR8ZK1TfP5OPSJnJf6l-pDs9AVeiJGLA"
@@ -39,7 +85,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "7789770188-m3l1q2vub09s6atao2krdv5hompbrd33.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "7789770188-0js4jlk0jueofghlve5ab8nt664pvhpv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.crapadviser.orgnaizer"
+              }
+            }
+          ]
         }
       }
     },
@@ -50,7 +108,28 @@
           "package_name": "com.festiefoodie.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "7789770188-p8gp52v96ui31063kkf6ka5al49u79b5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.festiefoodie.app",
+            "certificate_hash": "fa4261459c9abfb316310f35ec7634ffb860beea"
+          }
+        },
+        {
+          "client_id": "7789770188-th21gvl8b3vrd5cpj9gsjalg1kq77mco.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.festiefoodie.app",
+            "certificate_hash": "4a53be9beebaf25c5b29dd4af39a432e33d2c8e7"
+          }
+        },
+        {
+          "client_id": "7789770188-m3l1q2vub09s6atao2krdv5hompbrd33.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBTR8ZK1TfP5OPSJnJf6l-pDs9AVeiJGLA"
@@ -58,7 +137,71 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "7789770188-m3l1q2vub09s6atao2krdv5hompbrd33.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "7789770188-0js4jlk0jueofghlve5ab8nt664pvhpv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.crapadviser.orgnaizer"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:7789770188:android:bbce140cd9a8cc1011d969",
+        "android_client_info": {
+          "package_name": "com.festival_rumour"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "7789770188-eida3s2bqcplotk297pflklnvuaa8bhj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.festival_rumour",
+            "certificate_hash": "f08d7805146231a51988e262718632710c3e3c26"
+          }
+        },
+        {
+          "client_id": "7789770188-rq798vso1pcmo34cbk2fme4f3m1fpd67.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.festival_rumour",
+            "certificate_hash": "8b6386e704a43f14410441cf573b84fac974cec2"
+          }
+        },
+        {
+          "client_id": "7789770188-m3l1q2vub09s6atao2krdv5hompbrd33.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTR8ZK1TfP5OPSJnJf6l-pDs9AVeiJGLA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "7789770188-m3l1q2vub09s6atao2krdv5hompbrd33.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "7789770188-0js4jlk0jueofghlve5ab8nt664pvhpv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.crapadviser.orgnaizer"
+              }
+            }
+          ]
         }
       }
     }
