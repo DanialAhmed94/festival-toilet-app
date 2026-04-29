@@ -13,7 +13,10 @@ class What3WordsScreen extends StatefulWidget {
   late final initialLng;
   late final what3words;
 
-  What3WordsScreen({required this.what3words,required this.festivalLocation, required this.festivalId});
+  What3WordsScreen(
+      {required this.what3words,
+      required this.festivalLocation,
+      required this.festivalId});
 
   @override
   State<What3WordsScreen> createState() => _What3WordsScreenState();
@@ -26,7 +29,7 @@ class _What3WordsScreenState extends State<What3WordsScreen> {
       appBar: AppBar(
         toolbarHeight: 75,
         title: Text(
-          'Crap Adviser',
+          'Festival Toilet',
           style: TextStyle(
             fontFamily: 'Poppins-Bold',
             fontWeight: FontWeight.bold,
@@ -60,9 +63,13 @@ class _What3WordsScreenState extends State<What3WordsScreen> {
         ],
       ),
       // drawer: MyDrawer(),
-      body: MapScreen(intialCameraPosition: LatLng(widget.festivalLocation.latitude,
-            widget.festivalLocation.longitude), festivalId: widget.festivalId,what3words: widget.what3words,
-        festivalLatitude: widget.festivalLocation.latitude, festivalLongitude: widget.festivalLocation.longitude,
+      body: MapScreen(
+        intialCameraPosition: LatLng(widget.festivalLocation.latitude,
+            widget.festivalLocation.longitude),
+        festivalId: widget.festivalId,
+        what3words: widget.what3words,
+        festivalLatitude: widget.festivalLocation.latitude,
+        festivalLongitude: widget.festivalLocation.longitude,
       ),
     );
   }

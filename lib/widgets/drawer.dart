@@ -84,8 +84,8 @@ class MyDrawer extends StatelessWidget {
       },
     );
   }
-  void _showUpCommingProducts( BuildContext context){
 
+  void _showUpCommingProducts(BuildContext context) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -145,17 +145,19 @@ class MyDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: Container( decoration: BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/images/drawerBackground_updated.png'), // Change this to your image path
-          fit: BoxFit.cover, // Control how the image scales
+      child: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(
+                'assets/images/drawerBackground.png'), // Change this to your image path
+            fit: BoxFit.cover, // Control how the image scales
+          ),
         ),
-      ),
         child: Column(
           children: [
             AppBar(
               title: Text(
-                "Hello",
+                "Hello Festival Toilet",
                 style: TextStyle(fontFamily: 'Poppins-Bold'),
               ),
               automaticallyImplyLeading: false,
@@ -236,8 +238,8 @@ class MyDrawer extends StatelessWidget {
             ),
             GestureDetector(
               onTap: () async {
-                bool isLoggedIn = (await getIsLogedIn()) ??
-                    false; // Default to false if null
+                bool isLoggedIn =
+                    (await getIsLogedIn()) ?? false; // Default to false if null
 
                 if (isLoggedIn) {
                   Navigator.push(

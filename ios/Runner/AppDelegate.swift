@@ -5,7 +5,7 @@ import UserNotifications
 import Firebase
 import FirebaseMessaging
 
-@UIApplicationMain
+@main
 @objc class AppDelegate: FlutterAppDelegate, MessagingDelegate {
     
     override func application(

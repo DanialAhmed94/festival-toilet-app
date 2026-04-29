@@ -119,7 +119,6 @@ Future<void> initializeLocalNotifications() async {
 
 Future<void> initializeFCM() async {
   final messaging = FirebaseMessaging.instance;
-
   await messaging.requestPermission(alert: true, badge: true, sound: true);
 
   if (Platform.isAndroid) {
@@ -147,7 +146,6 @@ Future<void> initializeFCM() async {
   await _saveFcmTokenToServer(fcmToken);
 
   FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-    print("♻️ FCM Token refreshed: $newToken");
     await _saveFcmTokenToServer(newToken);
   });
 
@@ -227,7 +225,7 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
-      title: 'Crap Adviser',
+      title: 'Festival Toilet',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
